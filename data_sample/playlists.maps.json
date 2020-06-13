@@ -1,0 +1,30 @@
+{
+	"comedy": [
+		{
+			"name": "Sky Cake",
+			"artist": "Patton Oswalt",
+			"album": "My Weakness Is Strong",
+			"file": "Patton%20Oswalt/My%20Weakness%20Is%20Strong/14%20Sky%20Cake.mp3"
+		},
+		{
+			"name": "Gifts Of Forgiveness",
+			"artist": "Bill Hicks",
+			"album": "Rant In E-Minor",
+			"file": "Bill%20Hicks/Rant%20In%20E-Minor/08%20Gifts%20Of%20Forgiveness.mp3"
+		}
+	],
+	"crazy bass": [
+		{
+			"name": "AyAyAy [prod. Blue The Misfit]",
+			"artist": "Snow Tha Product",
+			"album": "The Rest Comes Later",
+			"file": "Snow%20Tha%20Product/The%20Rest%20Comes%20Later/01%20AyAyAy%20%5Bprod.%20Blue%20The%20Misfit%5D.mp3"
+		},
+		{
+			"name": "Bring The Pain",
+			"artist": "Mindless Self Indulgence",
+			"album": "Tight",
+			"file": "Mindless%20Self%20Indulgence/Tight/02%20Bring%20The%20Pain.mp3"
+		}
+	]
+}
