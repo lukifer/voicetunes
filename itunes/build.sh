@@ -1,6 +1,6 @@
 #!/bin/bash
 if [[ $# -eq 0 ]] ; then
-    echo 'enter one or more ssh targets, eg: pi@raspberry.local'
+    echo 'enter one or more ssh targets, eg: pi@raspberry.local:/home/pi'
     exit 0
 fi
 
