@@ -1,0 +1,16 @@
+{
+  "name": "itunes",
+  "version": "1.0.0",
+  "description": "",
+  "main": "itunes.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "itunes-data": "^0.1.4",
+    "remove-accents": "^0.4.2",
+    "written-number": "^0.9.1"
+  }
+}
