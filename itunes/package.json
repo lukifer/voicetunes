@@ -2,15 +2,26 @@
   "name": "itunes",
   "version": "1.0.0",
   "description": "",
-  "main": "itunes.js",
+  "main": "itunes.ts",
+  "engines": {
+    "node": ">=10.0"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "ts-node itunes.ts",
+    "maketypes": "echo 'npx maketypes -i data/tracks.json.ts data/tracks.json tracks'"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/eslint": "^6.1.1",
+    "@types/node": "^14.0.14",
+    "@typescript-eslint/eslint-plugin": "^2.3.1",
+    "@typescript-eslint/parser": "^2.3.1",
+    "eslint": "^6.4.0",
     "itunes-data": "^0.1.4",
     "remove-accents": "^0.4.2",
+    "ts-node": "^8.10.2",
+    "typescript": "^3.9.6",
     "written-number": "^0.9.1"
   }
 }

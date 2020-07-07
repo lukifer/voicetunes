@@ -1,11 +1,7 @@
 {
   "itunesBasePath": "file:///Users/lukifer/Music/iTunes/iTunes%20Media/Music/",
-  "artists": {
-  },
-  "albums": {
-  },
-  "tracks": {
-  },
-  "playlists": {
-  }
+  "artists": {},
+  "albums": {},
+  "tracks": {},
+  "playlists": {}
 }
