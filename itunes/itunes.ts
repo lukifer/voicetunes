@@ -28,7 +28,6 @@ import {
   ArtistMap,
   ArtistAlbumsMap,
   AlbumsMap,
-  AlbumByArtistMap,
   PlaylistTracksMap,
   TracksMap,
   OutputEntity,
@@ -38,6 +37,9 @@ import {
 const artistsData   = artistsJson();
 const playlistsData = playlistsJson();
 const tracksData    = tracksJson();
+
+const home = process.env["HOME"];
+const iTunesPath = substitutions?.iTunesPath || `file:///${home}/Music/iTunes/iTunes%20Media/Music/`;
 
 // itunes-data appears to be bugged on exporting albums, so we collate this ourselves
 let albumsBuildMap: Record<ArtistAndAlbum, iTunesAlbum> = {};
@@ -83,17 +85,16 @@ function albumArtistOfTrack(track: iTunesTrack): Artist {
 }
 
 function albumLocationOfTrack(track: iTunesTrack) {
-  return track.Location.replace(substitutions.itunesBasePath, "").replace(/\/[^/]+\.m(p3|4a)$/i, "")
+  return track.Location.replace(iTunesPath, "").replace(/\/[^/]+\.m(p3|4a)$/i, "")
 }
 
 function writeOut(entity: OutputEntity, map: OutputMaps) {
-  fs.writeFileSync(`out/${entity}.ini`, `(${Object.keys(map).join(" | ")})`);
   fs.writeFileSync(`out/${entity}.map.json`, JSON.stringify(map, null, "\t"));
   process.stdout.write(`${Object.keys(map).length} ${entity} written\n`);
 }
 
 function processTracks(tracks: iTunesAlbumTrack[]): Track[] {
-  return tracks.map((track: iTunesAlbumTrack, n: number) => {
+  return tracks.map((track: iTunesAlbumTrack) => {
     if(!track || !track.Name) {
       // console.log(`Missing track #${n}`, track);
       return null;
@@ -109,7 +110,7 @@ function processTracks(tracks: iTunesAlbumTrack[]): Track[] {
       albumArtist: track["Album Artist"],
       number:      track["Track Number"],
       disc:        track["Disc Number"] || 1,
-      file:        track.Location.replace(substitutions.itunesBasePath, ""),
+      file:        track.Location.replace(iTunesPath, ""),
     };
   }).filter(track => track && songFileRegex.test(track.file));
 }
@@ -122,13 +123,12 @@ function processAlbum(album: iTunesAlbum): Album {
   return {
     name:   album.Name,
     artist: album.Artist,
-    path:   album.Location.replace(substitutions.itunesBasePath, ""),
+    path:   album.Location.replace(iTunesPath, ""),
     tracks: processTracks(album.Tracks.sort(albumTrackSort)),
   };
 }
 
 function addTrackToAlbums(track: iTunesTrack) {
-  if(!track.Location) return;
   const albumArtist = albumArtistOfTrack(track);
   const albumKey = `${track.Album} | ${albumArtist}` as ArtistAndAlbum;
   if(!albumsBuildMap[albumKey]) {
@@ -146,21 +146,23 @@ function addTrackToAlbums(track: iTunesTrack) {
     "Album Artist": track["Album Artist"],
     "Track Number": track["Track Number"],
     "Disc Number":  track["Disc Number"] || 1,
-    Location:       track.Location.replace(substitutions.itunesBasePath, ""),
+    Location:       track.Location.replace(iTunesPath, ""),
   } as iTunesAlbumTrack);
 }
+
 
 // TRACKS
 
 const tracksMap: TracksMap =
   tracksData
     .filter(filterTrack)
-    .filter(track => !!fourStarTrackFilter[track["Track ID"]])
     .filter(({ Location }) => Location && songFileRegex.test(Location))
     .filter(({ Genre }) => !["Skool", "Audiobook", "Audiobook (Off)"].includes(Genre))
-    .reduce((acc: TracksMap, track: iTunesTrack) => {
+    .filter(track => {
       track.Album && track.Location && addTrackToAlbums(track);
-
+      return !!fourStarTrackFilter[track["Track ID"]];
+    })
+    .reduce((acc: TracksMap, track: iTunesTrack) => {
       const trackSentence  = scrubTrackName(track.Name);
       const artistSentence = scrubArtistName(track.Artist);
       const trackByArtistSentence = `${trackSentence} by ${artistSentence}`;
@@ -210,24 +212,21 @@ const albumsMap: AlbumsMap =
   albumsData
     .filter(filterAlbum)
     .reduce((acc: AlbumsMap, album: iTunesAlbum): AlbumsMap => {
-      const albumSentence = scrubAlbumName(album.Name);
+      const albumSentence  = scrubAlbumName(album.Name);
+      const artistSentence = scrubArtistName(album.Artist);
+      const albumByArtistSentence = `${albumSentence} by ${artistSentence}`;
       if(!albumSentence) return acc;
-      return { ...acc, [albumSentence]: [ ...(acc[albumSentence] || []), processAlbum(album) ] };
+      const processedAlbum = processAlbum(album);
+      return {
+        ...acc,
+        [albumSentence]: [ ...(acc[albumSentence] || []), processedAlbum ],
+        ...(artistSentence === "compilation" ? {} : {
+          [albumByArtistSentence]: [ processedAlbum ],
+        })
+      };
     }, {} as AlbumsMap);
 
 writeOut("albums", albumsMap);
-
-const albumByArtistMap: AlbumByArtistMap =
-  albumsData
-    .filter(album => album.Artist !== "Compilation")
-    .reduce((acc: AlbumByArtistMap, album: iTunesAlbum) => {
-      const albumSentence  = scrubAlbumName(album.Name);
-      const artistSentence = scrubArtistName(album.Artist);
-      const sentence = `${albumSentence} by ${artistSentence}`;
-      return({ ...acc, [sentence]: processAlbum(album) });
-    }, {} as AlbumByArtistMap);
-
-writeOut("albumByArtist", albumByArtistMap);
 
 
 // ARTISTS
@@ -243,6 +242,7 @@ const artistMap: ArtistMap =
 
 writeOut("artist", artistMap);
 
+
 // PLAYLISTS
 
 // let debugLast: iTunesTrack | undefined;
@@ -254,17 +254,16 @@ const playlistsTracksMap: PlaylistTracksMap =
       const name = playlist.Name;
       const playlistSentence = (substitutions.playlists[name] || name).toLowerCase();
       const playlistTracks = playlist.Tracks.map((track: iTunesTrack) => {
-        if(!track?.Name || !track?.Location) return null;
         // if(!track || !track.Name) {
-        //   // console.log(`Missing track in ${name}, after:`, debugLast);
-        //   return null;
+        //   console.log(`Missing track in ${name}, after:`, debugLast);
         // }
         // debugLast = track;
+        if(!track?.Name || !track?.Location) return null;
         return {
           name:   track.Name,
           artist: track.Artist,
           album:  track.Album,
-          file:   track.Location.replace(substitutions.itunesBasePath, ""),
+          file:   track.Location.replace(iTunesPath, ""),
         };
       }).filter(track => track && songFileRegex.test(track.file));
       return { ...acc, [playlistSentence]: playlistTracks }

@@ -99,18 +99,17 @@ export interface iTunesPlaylist {
 }
 
 export interface iTunesSubstitutions {
-  "itunesBasePath": string;
-  "albums":         Record<string, string>;
-  "artists":        Record<string, string>;
-  "playlists":      Record<string, string>;
-  "tracks":         Record<string, string>;
+  iTunesPath?: string;
+  albums:      Record<string, string>;
+  artists:     Record<string, string>;
+  playlists:   Record<string, string>;
+  tracks:      Record<string, string>;
 }
 
 export type Artist         = string;
 export type ArtistAndAlbum = string;
 
 export type ArtistSentence         = string;
-export type AlbumByArtistSentence  = string;
 export type AlbumSentence          = string;
 export type PlaylistSentence       = string;
 export type TrackSentence          = string;
@@ -119,7 +118,6 @@ export type TrackByArtistSentence  = string;
 export type ArtistMap         = Record<ArtistSentence,        Artist >;
 export type ArtistAlbumsMap   = Record<ArtistSentence,        Album[]>;
 export type AlbumsMap         = Record<AlbumSentence,         Album[]>;
-export type AlbumByArtistMap  = Record<AlbumSentence,         Album  >;
 export type PlaylistTracksMap = Record<PlaylistSentence,      Track[]>;
 export type TracksMap         = Record<TrackSentence,         Track[]>;
 export type TrackByArtistMap  = Record<TrackByArtistSentence, Track  >;
@@ -146,7 +144,6 @@ export type EntityFilterType = "albums" | "artists" | "playlists" | "tracks";
 export type EntityFilter = Required<Record<EntityFilterType, string[]>>
 
 export type OutputEntity = "albums"
-                         | "albumByArtist"
                          | "artist"
                          | "artistAlbums"
                          | "playlistTracks"
@@ -156,7 +153,6 @@ export type OutputEntity = "albums"
 export type OutputMaps = ArtistMap
                        | ArtistAlbumsMap
                        | AlbumsMap
-                       | AlbumByArtistMap
                        | PlaylistTracksMap
                        | TracksMap
                        | TrackByArtistMap

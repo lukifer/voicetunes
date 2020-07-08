@@ -1,36 +1,34 @@
 import * as fs from "fs";
-const albums         = fs.readFileSync('out/albums.ini',          'utf8');
-const albumByArtist  = fs.readFileSync('out/albumByArtist.ini',   'utf8');
-const artist         = fs.readFileSync('out/artist.ini',          'utf8');
-// const artistAlbums   = fs.readFileSync('out/artistAlbums.ini',    'utf8');
-const playlist       = fs.readFileSync('out/playlistTracks.ini',  'utf8');
-const tracks         = fs.readFileSync('out/tracks.ini',          'utf8');
+
+import { readJson } from "./data";
+const jsonKeys = (str: string) => Object.keys(readJson(`./out/${str}.map.json`));
+
+const albumKeys    = jsonKeys("albums");
+const artistKeys   = jsonKeys("artist");
+const trackKeys    = jsonKeys("tracks");
+const playlistKeys = jsonKeys("playlistTracks");
 
 const sentences_ini = `
 [PlayArtist]
 play [something] [(by | from)] <artist>
 play artist <artist>
-artist = ${artist}{artist}
+artist = (${artistKeys.join(" | ")}){artist}
 
 [PlayRandomAlbumByArtist]
 play [an] album [by] <PlayArtist.artist>
 
 [PlayAlbum]
 play [the] album <album>
-album = ${albums}{album}
-
-[PlayAlbumByArtist]
-play [album] <albumByArtist>
-albumByArtist = ${albumByArtist}{albumByArtist}
+album = (${albumKeys.join(" | ")}){album}
 
 [StartPlaylist]
 <playtype> play list <playlist>
 playtype = (start | play | shuffle){action}
-playlist = ${playlist}{playlist}
+playlist = ${playlistKeys.join(" | ")}{playlist}
 
 [PlayTrack]
 play [the] [(track | song)] <track>
-track = ${tracks}{track}
+track = (${trackKeys.join(" | ")}){track}
 
 [WhatIsTime]
 what time is it
@@ -45,4 +43,4 @@ never mind
 do nothing
 `;
 
-fs.writeFileSync("sentences.ini", sentences_ini);
+fs.writeFileSync("out/sentences.ini", sentences_ini);
