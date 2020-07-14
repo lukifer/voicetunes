@@ -27,6 +27,7 @@ import {
   Track,
   ArtistMap,
   ArtistAlbumsMap,
+  ArtistTracksMap,
   AlbumsMap,
   PlaylistTracksMap,
   TracksMap,
@@ -89,7 +90,7 @@ function albumLocationOfTrack(track: iTunesTrack) {
 }
 
 function writeOut(entity: OutputEntity, map: OutputMaps) {
-  fs.writeFileSync(`out/${entity}.map.json`, JSON.stringify(map, null, "\t"));
+  fs.writeFileSync(`maps/${entity}.json`, JSON.stringify(map, null, "\t"));
   process.stdout.write(`${Object.keys(map).length} ${entity} written\n`);
 }
 
@@ -183,6 +184,23 @@ const tracksMap: TracksMap =
       return acc;
     }, {} as TracksMap);
 writeOut("tracks", tracksMap);
+
+const artistTracksMap: ArtistTracksMap = tracksData
+  .filter(filterTrack)
+  .filter(track => fourStarTrackFilter[track["Track ID"]])
+  .filter(({ Location }) => Location && songFileRegex.test(Location))
+  .filter(({ Genre }) => !["Skool", "Audiobook", "Audiobook (Off)"].includes(Genre))
+  .reduce((acc: ArtistTracksMap, track: iTunesTrack): ArtistTracksMap => {
+    const artistSentence = scrubArtistName(track.Artist);
+    return {
+      ...acc,
+      [artistSentence]: [
+        ...(acc[artistSentence] || []),
+        ...processTracks([track]),
+      ],
+    };
+  }, {} as ArtistTracksMap);
+writeOut("artistTracks", artistTracksMap);
 
 const artistAlbumsMap: ArtistAlbumsMap = Object.keys(albumsBuildMap)
   .reduce((acc: ArtistAlbumsMap, artistAlbumKey: ArtistAndAlbum): ArtistAlbumsMap => {

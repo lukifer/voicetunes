@@ -109,18 +109,17 @@ export interface iTunesSubstitutions {
 export type Artist         = string;
 export type ArtistAndAlbum = string;
 
-export type ArtistSentence         = string;
-export type AlbumSentence          = string;
-export type PlaylistSentence       = string;
-export type TrackSentence          = string;
-export type TrackByArtistSentence  = string;
+export type ArtistSentence   = string;
+export type AlbumSentence    = string;
+export type PlaylistSentence = string;
+export type TrackSentence    = string;
 
-export type ArtistMap         = Record<ArtistSentence,        Artist >;
-export type ArtistAlbumsMap   = Record<ArtistSentence,        Album[]>;
-export type AlbumsMap         = Record<AlbumSentence,         Album[]>;
-export type PlaylistTracksMap = Record<PlaylistSentence,      Track[]>;
-export type TracksMap         = Record<TrackSentence,         Track[]>;
-export type TrackByArtistMap  = Record<TrackByArtistSentence, Track  >;
+export type ArtistMap         = Record<ArtistSentence,   Artist >;
+export type ArtistAlbumsMap   = Record<ArtistSentence,   Album[]>;
+export type ArtistTracksMap   = Record<ArtistSentence,   Track[]>;
+export type AlbumsMap         = Record<AlbumSentence,    Album[]>;
+export type PlaylistTracksMap = Record<PlaylistSentence, Track[]>;
+export type TracksMap         = Record<TrackSentence,    Track[]>;
 
 export type Track = {
   name:         string;
@@ -146,14 +145,27 @@ export type EntityFilter = Required<Record<EntityFilterType, string[]>>
 export type OutputEntity = "albums"
                          | "artist"
                          | "artistAlbums"
+                         | "artistTracks"
                          | "playlistTracks"
                          | "tracks"
-                         | "trackByArtist"
                          ;
 export type OutputMaps = ArtistMap
                        | ArtistAlbumsMap
+                       | ArtistTracksMap
                        | AlbumsMap
                        | PlaylistTracksMap
                        | TracksMap
-                       | TrackByArtistMap
                        ;
+
+export interface MopidyApi {
+  slots: string[];
+}
+
+export interface Message {
+  intent: MessageIntent;
+  slots: Record<string, string>[];
+}
+
+export interface MessageIntent {
+  name: string;
+}
