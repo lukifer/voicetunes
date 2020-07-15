@@ -157,13 +157,19 @@ export type OutputMaps = ArtistMap
                        | TracksMap
                        ;
 
-export interface MopidyApi {
-  slots: string[];
+export interface Sfx {
+  beep:  () => void;
+  error: () => void;
+  ok:    () => void;
 }
+
+export type LedPixel = [number, number, number];
+
+export type SlotType = "action" | "album" | "artist" | "playlist" | "track";
 
 export interface Message {
   intent: MessageIntent;
-  slots: Record<string, string>[];
+  slots: Partial<Record<SlotType, string>>;
 }
 
 export interface MessageIntent {

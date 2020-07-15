@@ -1,4 +1,4 @@
 /data
 node_modules
-*.local.js
+*.local.*
 .DS_Store
