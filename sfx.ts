@@ -50,4 +50,9 @@ export async function speak(string: string) {
 
 const playFuncs: Sfx = Object.keys(WAV).reduce((acc, x) => ({...acc, [x.toLowerCase()]: () => play(x)}), {} as Sfx)
 
-export default { ...playFuncs };
+export default {
+	init,
+	play,
+	speak,
+	...playFuncs,
+};

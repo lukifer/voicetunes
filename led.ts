@@ -16,7 +16,7 @@ const led = new Gpio(5, 'out');
 export function open() { led.writeSync(1); }
 const LedDriver = new Apa102spi(12, 100);
 
-function startSpin(speed = LED_MS) {
+export function startSpin(speed = LED_MS) {
 	if(speed < 5) speed *= LED_MS;
 	if(timer) clearInterval(timer)
 	timer = setInterval(() => {
