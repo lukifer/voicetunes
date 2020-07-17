@@ -3,14 +3,14 @@ import Mopidy from "mopidy";
 
 const mopidyFactory = () => ({
   tracklist: {
-    add: jest.fn(),
-    clear: jest.fn(),
+    add:     jest.fn(),
+    clear:   jest.fn(),
     shuffle: jest.fn(),
   },
   playback: {
     play: jest.fn(),
   },
-} as Mopidy);
+} as any as Mopidy);
 
 test('plays a track', async () => {
   const mopidy = mopidyFactory();
