@@ -1,7 +1,7 @@
 import * as fs from "fs";
 
 import { readJson } from "./data";
-const jsonKeys = (str: string) => Object.keys(readJson(`./out/${str}.map.json`));
+const jsonKeys = (str: string) => Object.keys(readJson(`./maps/${str}.json`));
 
 const albumKeys    = jsonKeys("albums");
 const artistKeys   = jsonKeys("artist");
@@ -43,4 +43,4 @@ never mind
 do nothing
 `;
 
-fs.writeFileSync("out/sentences.ini", sentences_ini);
+fs.writeFileSync("sentences.ini", sentences_ini);
