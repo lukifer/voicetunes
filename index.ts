@@ -2,11 +2,11 @@ import Mopidy from "mopidy";
 import { exec }      from "child_process";
 import { promisify } from "util";
 
-import * as LED     from "./led";
-import * as BT      from "./bt";
-import SFX          from "./sfx";
-import { doIntent } from "./intent";
-import { between }  from "./utils";
+import * as LED          from "./led";
+import * as BT           from "./bt";
+import SFX               from "./sfx";
+import { doIntent }      from "./intent";
+import { between, wait } from "./utils";
 
 import config from "./config.local";
 const {
@@ -16,7 +16,7 @@ const PATH_INPUT_WAV = `${PATH_RAMDISK}/input.wav`;
 
 const execp = promisify(exec);
 
-SFX.init("duplex");
+SFX.init("dmixer");
 const mopidy = new Mopidy({ webSocketUrl: "ws://localhost:6680/mopidy/ws/" });
 LED.open();
 
@@ -24,7 +24,7 @@ mopidy.on("state:online", async () => {
 	await BT.connect();
 	LED.flair();
 	await mopidy.tracklist.clear();
-	//SFX.beep();
+	SFX.beep();
 
 	BT.listen({
 		UP:    () => changeVol( 10),
@@ -45,43 +45,64 @@ async function changeVol(diff: number) {
 	const oldVol = await mixer.getVolume();
 	const newVol = between(0, oldVol + diff, 100);
 	LED.volumeChange(oldVol, newVol);
-	mixer.setVolume([newVol])
+	return mixer.setVolume([newVol])
 }
 
+let cachedVolume: number | null = null;
 async function togglePlayback() {
-	const { playback } = mopidy;
-	return ("playing" === await playback.getState())
-		? playback.pause()
-		: playback.resume()
-		;
+	const { mixer, playback } = mopidy;
+	if("playing" === await playback.getState()) {
+		//cachedVolume = await mixer.getVolume();
+		//await transitionVolume(cachedVolume, 0);
+		return playback.pause();
+	} else {
+		//await playback.resume();
+		//if(cachedVolume !== null) {
+		//	await transitionVolume(await mixer.getVolume(), cachedVolume);
+		//	cachedVolume = null;
+		//}
+		return playback.resume();
+	}
+}
+
+// FIXME: Mopidy has a volume change delay, and the Promise doesn't wait for it to resolve
+
+async function transitionVolume(fromVol: number, toVol: number) {
+	const { mixer } = mopidy;
+	let tempVolume = fromVol;
+	const interval = (fromVol < toVol) ? 20 : -20;
+	do {
+		tempVolume += interval;
+		console.log("tempVolume", tempVolume);
+		await mixer.setVolume([between(0, tempVolume, 100)]);
+		await wait(200);
+	} while(interval > 0 ? tempVolume < 100 : tempVolume > 0);
 }
 
 async function startListening() {
-	await execp(`if pgrep arecord; then pkill arecord; fi`);
-	SFX.beep();
-	LED.startSpin(3);
 	await mopidy.playback.pause();
-	await execp(`sudo arecord --duration=20 --rate=16000 --format=S16_LE ${PATH_INPUT_WAV}`);
-}
-
-async function stopListening() {
-	await execp("pkill arecord");
-	SFX.ok();
-	await execp("sleep 0.01"); // FIXME
-	LED.startSpin(1);
+	await execp(`if pgrep arecord; then killall -q arecord; fi`);
+	LED.startSpinSlow();
+	SFX.beep();
 	const { stdout } = await execp([
-		`cat ${PATH_INPUT_WAV}`,
-		`voice2json transcribe-wav`,
+		`sudo arecord -q -D ac108 --duration=20 --rate=16000 --format=S16_LE`,
+		`voice2json transcribe-stream -c 1 -a -`,
 		`voice2json recognize-intent`,
 	].join(" | "));
+
 	const msg = stdout[0] === "{" && JSON.parse(stdout);
-	LED.startSpin(0.5);
 	if(msg) {
 		await doIntent(mopidy, msg);
 	} else {
 		err("invalid json", stdout);
 	}
 	LED.stopSpin();
+}
+
+async function stopListening() {
+	LED.startSpinFast();
+	await execp("sudo killall -q arecord");
+	SFX.ok();
 }
 
 function err(msg: string, also: unknown) {

@@ -27,7 +27,7 @@ export const artistMapJson         = (): ArtistMap         => readJson("./itunes
 export const artistAlbumsMapJson   = (): ArtistAlbumsMap   => readJson("./itunes/maps/artistAlbums.json");
 export const artistTracksMapJson   = (): ArtistTracksMap   => readJson("./itunes/maps/artistTracks.json");
 export const playlistTracksMapJson = (): PlaylistTracksMap => readJson("./itunes/maps/playlistTracks.json");
-export const tracksMapJson         = (): TracksMap         => readJson("./itunes/out/tracks.json");
+export const tracksMapJson         = (): TracksMap         => readJson("./itunes/maps/tracks.json");
 
 const albumsMap         = albumsMapJson();
 const artistMap         = artistMapJson();
@@ -46,27 +46,27 @@ export async function doIntent(mopidy: Mopidy, msg: Message) {
 		case "PlayArtist":
 
 			if(!slots?.artist || !artistMap[slots.artist]) {
-				return err("no has artist", msg);
+				return err("no artist", msg);
 			}
 
 			let tracks = artistTracksMap[slots.artist];
-			console.log(`${tracks?.length} tracks found for ${artistMap[slots.artist]}`);
+			//console.log(`${tracks?.length} tracks found for ${artistMap[slots.artist]}`);
 
 			if(!tracks?.length) {
-				return err("No tracks", msg);
+				return err("no tracks", msg);
 			} else {
 				playTracks(mopidy, tracks.map(x => x.file), true);
 			}
 			break;
 
 		case "PlayRandomAlbumByArtist":
-			if(!slots?.artist || !artistMap[slots.artist]) {
-				return err("no artist", msg);
+			if(!slots?.artist || !artistAlbumsMap[slots.artist]?.length) {
+				return err("no albums for artist", msg);
 			}
 			const albumsOfArtist = artistAlbumsMap[slots.artist];
 			const rndAlbum = albumsOfArtist[rnd(albumsOfArtist.length)];
 			if(!rndAlbum?.tracks?.length) {
-				return err("No tracks", [ msg, rndAlbum ]);
+				return err("no tracks", [ msg, rndAlbum ]);
 			} else {
 				playTracks(mopidy, rndAlbum.tracks.map(x => x.file));
 			}
@@ -74,7 +74,7 @@ export async function doIntent(mopidy: Mopidy, msg: Message) {
 
 		case "PlayAlbum":
 			if(!slots?.album || !albumsMap[slots.album]) {
-				return err("no has album", msg);
+				return err("no album", msg);
 			}
 			const albums = albumsMap[slots.album];
 			const which = albums.length === 1 ? 0 : rnd(albums.length);
@@ -83,14 +83,14 @@ export async function doIntent(mopidy: Mopidy, msg: Message) {
 
 		case "StartPlaylist":
 			if(!slots?.playlist || !playlistTracksMap[slots.playlist]) {
-				return err("no has playlist", msg);
+				return err("no playlist", msg);
 			}
 			playTracks(mopidy, playlistTracksMap[slots.playlist].map(x => x.file), true);
 			break;
 
 		case "PlayTrack":
 			if(!slots?.track || !tracksMap[slots.track]) {
-				return err("no has track", msg);
+				return err("no track", msg);
 			}
 			playTracks(mopidy, tracksMap[slots.track].map(x => x.file), true);
 			break;
@@ -127,7 +127,6 @@ export async function playTracks(mopidy: Mopidy, tracks: string[], shuffle: bool
 
 	// cue a random track and start playing immediately
 	const start = shuffle ? rnd(tracks.length) : 0;
-	//log(tracks[start]);
 	await tracklist.clear();
 	await tracklist.add({ "uris": [ `${MUSIC_URL}/${tracks[start]}` ] });
 	await playback.play();
@@ -144,7 +143,6 @@ export async function playTracks(mopidy: Mopidy, tracks: string[], shuffle: bool
 			await tracklist.add({ uris: shuffled.map(file => `${MUSIC_URL}/${file}`) });
 			tracklist.shuffle([1]); // equivalent to slice(1, Infinity)
 		} else {
-			//log(tracks, remainingTracks);
 			await tracklist.add({ uris: Object.values(remainingTracks).slice(0, picks).map(file => `${MUSIC_URL}/${file}`) });
 		}
 	}

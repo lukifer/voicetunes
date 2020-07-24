@@ -24,7 +24,7 @@ album = (${albumKeys.join(" | ")}){album}
 [StartPlaylist]
 <playtype> play list <playlist>
 playtype = (start | play | shuffle){action}
-playlist = ${playlistKeys.join(" | ")}{playlist}
+playlist = (${playlistKeys.join(" | ")}){playlist}
 
 [PlayTrack]
 play [the] [(track | song)] <track>

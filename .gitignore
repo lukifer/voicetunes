@@ -2,3 +2,4 @@
 node_modules
 *.local.*
 .DS_Store
+sentences.ini

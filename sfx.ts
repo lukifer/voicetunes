@@ -3,7 +3,7 @@ import { promisify } from "util";
 
 import { Sfx } from "./itunes/types";
 
-import { config } from "./config.local";
+import config from "./config.local";
 
 const execp = promisify(exec);
 
@@ -31,10 +31,11 @@ export async function init(device: string) {
 
 export function play(sound: string) {
 	// FIXME: share audio out with mopidy
-	//playFile(`${PATH_RAMDISK}/${WAV[sound]}.wav`);
+	playFile(`${PATH_RAMDISK}/${WAV[sound]}.wav`);
 }
 
 export async function playFile(file: string) {
+	//console.log(`sudo aplay ${audiohw} ${file}`);
 	const { stdout, stderr } = await execp(`sudo aplay ${audiohw} ${file}`);
 	//console.log(stdout, stderr);
 }
