@@ -30,12 +30,18 @@ playlist = (${playlistKeys.join(" | ")}){playlist}
 play [the] [(track | song)] <track>
 track = (${trackKeys.join(" | ")}){track}
 
+[ReadLog]
+what is the last log entry
+
 [WhatIsTime]
 what time is it
 what is the time
 
+[Reboot]
+reboot device
+
 [Shutdown]
-shut down device confirm
+shut down device
 
 [Nevermind]
 nevermind
