@@ -1,11 +1,14 @@
-import Mopidy   from "mopidy";
-import Shuffler from "shuffle-array";
-import { exec } from "child_process";
+import Mopidy        from "mopidy";
+import Shuffler      from "shuffle-array";
+import { exec }      from "child_process";
+import { promisify } from "util";
 
 import config       from "./config.local";
 import { readJson } from "./itunes/data";
 import SFX          from "./sfx";
 import { rnd }      from "./utils";
+
+const execp = promisify(exec);
 
 const {
 	MUSIC_URL = "file:///home/pi/music",
@@ -96,7 +99,7 @@ export async function doIntent(mopidy: Mopidy, msg: Message) {
 			break;
 
 		case "WhatIsTime":
-			const { stdout } = exec([
+			const { stdout } = await execp([
 				`if [ $(date +%M) != "00" ]`,
 				`then date '+%-H %M %p'`,
 				`else echo -n $(date +%-H)`,
@@ -104,11 +107,21 @@ export async function doIntent(mopidy: Mopidy, msg: Message) {
 				`date +%p`,
 				`fi`
 			].join(";"));
-			log(stdout);
-			//SFX.speak(stdout); // FIXME
+			SFX.speak(stdout.replace("\n", "").replace(/([a|p])m/, "$1 m"));
 			break;
 
-		case "ShutdownConfirm":
+		case "ReadLog":
+			const log = await execp(`tail -n 1 ${__dirname}/log.txt`);
+			console.log(log.stdout);
+			SFX.speak(log.stdout);
+			break;
+
+		case "Restart":
+			SFX.ok();
+			exec("sudo reboot now");
+			break;
+
+		case "Shutdown":
 			SFX.ok();
 			exec("sudo shutdown now");
 			break;

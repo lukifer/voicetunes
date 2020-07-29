@@ -67,17 +67,17 @@ async function togglePlayback() {
 
 // FIXME: Mopidy has a volume change delay, and the Promise doesn't wait for it to resolve
 
-async function transitionVolume(fromVol: number, toVol: number) {
-	const { mixer } = mopidy;
-	let tempVolume = fromVol;
-	const interval = (fromVol < toVol) ? 20 : -20;
-	do {
-		tempVolume += interval;
-		console.log("tempVolume", tempVolume);
-		await mixer.setVolume([between(0, tempVolume, 100)]);
-		await wait(200);
-	} while(interval > 0 ? tempVolume < 100 : tempVolume > 0);
-}
+//async function transitionVolume(fromVol: number, toVol: number) {
+//	const { mixer } = mopidy;
+//	let tempVolume = fromVol;
+//	const interval = (fromVol < toVol) ? 20 : -20;
+//	do {
+//		tempVolume += interval;
+//		console.log("tempVolume", tempVolume);
+//		await mixer.setVolume([between(0, tempVolume, 100)]);
+//		await wait(200);
+//	} while(interval > 0 ? tempVolume < 100 : tempVolume > 0);
+//}
 
 async function startListening() {
 	await mopidy.playback.pause();

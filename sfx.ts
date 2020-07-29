@@ -30,7 +30,6 @@ export async function init(device: string) {
 }
 
 export function play(sound: string) {
-	// FIXME: share audio out with mopidy
 	playFile(`${PATH_RAMDISK}/${WAV[sound]}.wav`);
 }
 
@@ -41,11 +40,10 @@ export async function playFile(file: string) {
 }
 
 export async function speak(string: string) {
+	const tmpWav   = `${PATH_RAMDISK}/tmp.wav`;
 	const speakWav = `${PATH_RAMDISK}/speak.wav`;
-	await execp(`flite -t "${string}" -voice slt -o ${speakWav}`);
-	await execp(`sleep 0.05`);
-	//const { stdout, stderr } = await execp(`wc -c ${speakWav}`);
-	//console.log("speak bytes "+stdout, stderr);
+	await execp(`flite -t "${string}" -voice slt -o ${tmpWav}`);
+	await execp(`sox ${tmpWav} -c 2 -r 48k ${speakWav}`);
 	playFile(speakWav);
 }
 
