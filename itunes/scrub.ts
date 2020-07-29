@@ -36,6 +36,12 @@ export const substitutions = substitutionsJson();
 
 const numberWords = (x: string) => ` ${writtenNumber(parseInt(x), {noAnd: true}).replace(/-/g, " ")} `;
 
+const wordSubstitutions: StringReplaceTuple[] = Object.keys(substitutions.words || {})
+  .reduce((acc, word) => [
+    ...acc,
+    [new RegExp(`\\b${word}\\b`, "g"), substitutions.words[word]]
+  ], [] as StringReplaceTuple[]);
+
 export function scrub(str: string) {
   return removeAccents(str.toLowerCase())
     .replace(         /\./g, " ")
@@ -43,6 +49,7 @@ export function scrub(str: string) {
     .replace(        /\s+/g, " ")
     .replace(/[^a-z0-9\s]/g, "")
     .replace(      /\sn\s/g, " and ")
+    .replaceAll(wordSubstitutions)
     ;
 }
 

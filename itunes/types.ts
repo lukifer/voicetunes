@@ -100,6 +100,7 @@ export interface iTunesPlaylist {
 
 export interface iTunesSubstitutions {
   iTunesPath?: string;
+  words?:      Record<string, string>;
   albums:      Record<string, string>;
   artists:     Record<string, string>;
   playlists:   Record<string, string>;
