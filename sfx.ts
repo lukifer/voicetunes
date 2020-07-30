@@ -17,12 +17,12 @@ export async function init(device: string) {
 	await execp(`mkdir -p ${PATH_RAMDISK}`);
 	await execp(`sudo mount -t tmpfs -o size=50m myramdisk ${PATH_RAMDISK}`);
 	[WAV_BEEP, WAV_ERROR, WAV_OK].map(async (f) => {
-		if(f) await execp(`cp ./sounds/${f}.wav ${PATH_RAMDISK}/`);
+		f && await execp(`cp ./sounds/${f}.wav ${PATH_RAMDISK}/`);
 	});
 }
 
-export function play(sound: string) {
-	sound && playFile(`${PATH_RAMDISK}/${sound}.wav`);
+export async function play(sound: string) {
+	sound && await playFile(`${PATH_RAMDISK}/${sound}.wav`);
 }
 
 export async function playFile(file: string) {
@@ -41,7 +41,7 @@ export default {
 	init,
 	play,
 	speak,
-	beep:  play("beep"),
-	error: play("error"),
-	ok:    play("ok"),
+	beep:  async () => await play(WAV_BEEP),
+	error: async () => await play(WAV_ERROR),
+	ok:    async () => await play(WAV_OK),
 };

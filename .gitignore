@@ -1,6 +1,6 @@
 /data
 node_modules
-config.json
+config.local.json
 .DS_Store
 sentences.ini
 log.txt

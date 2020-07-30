@@ -159,9 +159,9 @@ export type OutputMaps = ArtistMap
                        ;
 
 export interface Sfx {
-  beep:  () => void;
-  error: () => void;
-  ok:    () => void;
+  beep:  async () => void;
+  error: async () => void;
+  ok:    async () => void;
 }
 
 export type LedPixel = [number, number, number];

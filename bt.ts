@@ -1,7 +1,6 @@
 import HID from "node-hid";
 
-import config from "./config.local";
-
+import config from "./config";
 const {
 	BT_BUTTON_NAME,
 	BT_DEVICE_EVENT,
@@ -11,7 +10,7 @@ const {
 	KEY_RIGHT,
 	KEY_PLAY,
 	KEY_LISTEN,
-} = config as any;
+} = config;
 
 const buttons = {
 	UP:           KEY_UP,

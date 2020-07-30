@@ -1,4 +1,4 @@
-import { readJson } from "itunes/data";
+import { readJson } from "./itunes/data";
 
 const config = {
 	AUDIO_DEVICE_IN: "ac108",
@@ -22,15 +22,5 @@ const config = {
 	WAV_OK: "",
 };
 
-// To override defaults, create a config.json with matching keys
-
-export default Object.assign({}, config, readJson("./config.json")) as typeof config;
-// const config_final = Object.assign({}, config, readJson("./taco.json")) as typeof config;
-//
-// export default config_final;
-// export default {
-// 	...config,
-// };
-// export default {
-// 	PATH_RAMDISK: config.PATH_RAMDISK,
-// };
+// To override defaults, create a config.local.json with matching keys
+export default Object.assign({}, config, readJson("./config.local.json")) as typeof config;
