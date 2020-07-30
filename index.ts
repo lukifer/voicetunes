@@ -7,17 +7,18 @@ import * as BT           from "./bt";
 import SFX               from "./sfx";
 import { doIntent }      from "./intent";
 import { between, wait } from "./utils";
+import config            from "./config";
 
-import config from "./config.local";
 const {
-	PATH_RAMDISK = "/tmp/ramdisk",
-} = config as any;
-const PATH_INPUT_WAV = `${PATH_RAMDISK}/input.wav`;
+	AUDIO_DEVICE_IN,
+	AUDIO_DEVICE_OUT,
+	URL_MOPIDY,
+} = config;
 
 const execp = promisify(exec);
 
-SFX.init("dmixer");
-const mopidy = new Mopidy({ webSocketUrl: "ws://localhost:6680/mopidy/ws/" });
+SFX.init(AUDIO_DEVICE_OUT);
+const mopidy = new Mopidy({ webSocketUrl: URL_MOPIDY });
 LED.open();
 
 mopidy.on("state:online", async () => {
@@ -81,11 +82,12 @@ async function togglePlayback() {
 
 async function startListening() {
 	await mopidy.playback.pause();
-	await execp(`if pgrep arecord; then killall -q arecord; fi`);
+	await execp(`if pgrep arecord;    then sudo killall -q arecord;    fi`);
+	await execp(`if pgrep voice2json; then sudo killall -q voice2json; fi`);
 	LED.startSpinSlow();
 	SFX.beep();
 	const { stdout } = await execp([
-		`sudo arecord -q -D ac108 --duration=20 --rate=16000 --format=S16_LE`,
+		`sudo arecord -q -D ${AUDIO_DEVICE_IN} --duration=20 --rate=16000 --format=S16_LE`,
 		`voice2json transcribe-stream -c 1 -a -`,
 		`voice2json recognize-intent`,
 	].join(" | "));
@@ -101,6 +103,7 @@ async function startListening() {
 
 async function stopListening() {
 	LED.startSpinFast();
+	await wait(200); // a little trailing audio seems to help accuracy
 	await execp("sudo killall -q arecord");
 	SFX.ok();
 }

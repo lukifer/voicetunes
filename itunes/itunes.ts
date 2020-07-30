@@ -35,12 +35,15 @@ import {
   OutputMaps,
 } from "./types";
 
+import config from "../config";
+const { URL_ITUNES } = config;
+
 const artistsData   = artistsJson();
 const playlistsData = playlistsJson();
 const tracksData    = tracksJson();
 
 const home = process.env["HOME"];
-const iTunesPath = substitutions?.iTunesPath || `file://${home}/Music/iTunes/iTunes%20Media/Music/`;
+const iTunesPath = URL_ITUNES || `file://${home}/Music/iTunes/iTunes%20Media/Music/`;
 
 // itunes-data appears to be bugged on exporting albums, so we collate this ourselves
 let albumsBuildMap: Record<ArtistAndAlbum, iTunesAlbum> = {};

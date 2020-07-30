@@ -3,17 +3,17 @@ import Shuffler      from "shuffle-array";
 import { exec }      from "child_process";
 import { promisify } from "util";
 
-import config       from "./config.local";
-import { readJson } from "./itunes/data";
-import SFX          from "./sfx";
-import { rnd }      from "./utils";
+import config                   from "./config";
+import { readJson }             from "./itunes/data";
+import SFX                      from "./sfx";
+import { arrayWrap, rnd, wait } from "./utils";
 
 const execp = promisify(exec);
 
 const {
-	MUSIC_URL = "file:///home/pi/music",
-	MAX_TRACKS = 60,
-} = config as any;
+	URL_MUSIC,
+	MAX_QUEUED_TRACKS,
+} = config;
 
 import {
   ArtistMap,
@@ -135,28 +135,42 @@ export async function doIntent(mopidy: Mopidy, msg: Message) {
 	}
 }
 
+let loadingTimer: ReturnType<typeof setTimeout> | null = null;
+
+async function cueRemainingTracks(mopidy: Mopidy, tracks: string[]) {
+	const { tracklist } = mopidy;
+	console.log("cueing "+tracks.length);
+	await tracklist.add({ uris: tracks.slice(0, 5).map(file => `${URL_MUSIC}/${file}`) });
+	if(tracks.length > 5) {
+		await wait(500);
+		await cueRemainingTracks(mopidy, tracks.slice(5));
+	}
+}
+
 export async function playTracks(mopidy: Mopidy, tracks: string[], shuffle: boolean = false) {
 	const { playback, tracklist } = mopidy;
+
+	if(loadingTimer) {
+		console.log("clearTimeout");
+		clearTimeout(loadingTimer);
+		loadingTimer = null;
+	}
 
 	// cue a random track and start playing immediately
 	const start = shuffle ? rnd(tracks.length) : 0;
 	await tracklist.clear();
-	await tracklist.add({ "uris": [ `${MUSIC_URL}/${tracks[start]}` ] });
+	await tracklist.add({ "uris": [ `${URL_MUSIC}/${tracks[start]}` ] });
 	await playback.play();
 
-	// FIXME: Increase MAX_TRACKS, load tracks async to reduce play start delay
-
-	// then add the remainder, shuffling if needed
+	// then add the remainder asynchronously (shuffling if needed)
 	const { [start]: firstTrack, ...remainingTracks } = tracks;
-	const picks = Math.min(MAX_TRACKS, Object.values(remainingTracks).length);
+	const picks = Math.min(MAX_QUEUED_TRACKS, Object.values(remainingTracks).length);
 	if(picks) {
 		if(shuffle) {
-			const picked = Shuffler.pick(Object.values(remainingTracks), { picks });
-			const shuffled = Array.isArray(picked) ? picked : [ picked ];
-			await tracklist.add({ uris: shuffled.map(file => `${MUSIC_URL}/${file}`) });
-			tracklist.shuffle([1]); // equivalent to slice(1, Infinity)
+			const shuffled = Shuffler.pick(Object.values(remainingTracks), { picks });
+			cueRemainingTracks(mopidy, arrayWrap(shuffled));
 		} else {
-			await tracklist.add({ uris: Object.values(remainingTracks).slice(0, picks).map(file => `${MUSIC_URL}/${file}`) });
+			cueRemainingTracks(mopidy, Object.values(remainingTracks).slice(0, picks));
 		}
 	}
 }
