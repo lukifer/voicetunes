@@ -1,6 +1,7 @@
 import { readJson } from "./itunes/data";
 
 const config = {
+	ALLOW_SHUTDOWN: false,
 	AUDIO_DEVICE_IN: "ac108",
 	AUDIO_DEVICE_OUT: "dmixer",
 	BT_BUTTON_NAME: "Tunai Button",
@@ -13,6 +14,8 @@ const config = {
 	KEY_LISTEN: 35,
 	LED_MS: 80,
 	MAX_QUEUED_TRACKS: 100,
+	MQTT_PASSTHROUGH_INTENTS: [],
+	MQTT_IP: "",
 	PATH_RAMDISK: "/tmp/ramdisk",
 	URL_MOPIDY: "ws://localhost:6680/mopidy/ws/",
 	URL_MUSIC: "file:///home/pi/music",

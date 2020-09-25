@@ -37,6 +37,22 @@ what is the last log entry
 what time is it
 what is the time
 
+[PreviousTrack]
+previous track
+
+[NextTrack]
+next track
+
+[Stop]
+stop
+stop playing
+stop music
+
+[Resume]
+resume
+resume playing
+resume music
+
 [Reboot]
 reboot device
 

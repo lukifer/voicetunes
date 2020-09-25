@@ -14,7 +14,10 @@ do
     url="$(cut -d':' -f1 <<<$ssh)"
     echo "url $url $ssh"
 
-    scp sentences.ini               "$url":/home/pi/.config/voice2json/sentences.ini
+    ssh "$url" 'touch ~/.config/voice2json/sentences.base.ini'
+    scp sentences.ini "$url":~/.config/voice2json/sentences.music.ini
+    ssh "$url" 'cd ~/.config/voice2json/ && cat sentences.base.ini sentences.music.ini > sentences.ini'
+
     scp maps/albums.json            "$ssh"/itunes/maps/albums.json
     scp maps/artist.json            "$ssh"/itunes/maps/artist.json
     scp maps/artistAlbums.json      "$ssh"/itunes/maps/artistAlbums.json

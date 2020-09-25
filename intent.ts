@@ -2,17 +2,21 @@ import Mopidy        from "mopidy";
 import Shuffler      from "shuffle-array";
 import { exec }      from "child_process";
 import { promisify } from "util";
+import { connect } from "mqtt";
 
-import config                   from "./config";
-import { readJson }             from "./itunes/data";
-import SFX                      from "./sfx";
-import { arrayWrap, rnd, wait } from "./utils";
+import config                            from "./config";
+import { readJson }                      from "./itunes/data";
+import SFX                               from "./sfx";
+import { arrayWrap, between, rnd, wait } from "./utils";
 
 const execp = promisify(exec);
 
 const {
-	URL_MUSIC,
+	ALLOW_SHUTDOWN,
 	MAX_QUEUED_TRACKS,
+	MQTT_IP,
+	MQTT_PASSTHROUGH_INTENTS,
+	URL_MUSIC,
 } = config;
 
 import {
@@ -24,6 +28,8 @@ import {
   TracksMap,
 	Message,
 } from "./itunes/types";
+
+const mqttClient = MQTT_IP && connect(`mqtt://${MQTT_IP}`);
 
 export const albumsMapJson         = (): AlbumsMap         => readJson("./itunes/maps/albums.json");
 export const artistMapJson         = (): ArtistMap         => readJson("./itunes/maps/artist.json");
@@ -116,14 +122,38 @@ export async function doIntent(mopidy: Mopidy, msg: Message) {
 			SFX.speak(log.stdout);
 			break;
 
+		case "NextTrack":
+			await mopidy.playback.next();
+			break;
+
+		case "PreviousTrack":
+			await mopidy.playback.previous();
+			break;
+
+		case "Resume":
+			mopidy.playback.resume();
+			break;
+
+		case "Stop":
+			mopidy.playback.pause();
+			break;
+
 		case "Restart":
-			SFX.ok();
-			exec("sudo reboot now");
+			if(ALLOW_SHUTDOWN) {
+				SFX.ok();
+				exec("sudo reboot now");
+			} else {
+				SFX.error();
+			}
 			break;
 
 		case "Shutdown":
-			SFX.ok();
-			exec("sudo shutdown now");
+			if(ALLOW_SHUTDOWN) {
+				SFX.ok();
+				exec("sudo shutdown now");
+			} else {
+				SFX.error();
+			}
 			break;
 
 		case "Nevermind":
@@ -131,7 +161,11 @@ export async function doIntent(mopidy: Mopidy, msg: Message) {
 			break;
 
 		default:
-			return err("command unrecognized", msg);
+			if(mqttClient && MQTT_PASSTHROUGH_INTENTS.includes(intent.name)) {
+				mqttClient.publish("voice2json", msg.toString());
+			} else {
+				return err("command unrecognized", msg);
+			}
 	}
 }
 
@@ -174,6 +208,45 @@ export async function playTracks(mopidy: Mopidy, tracks: string[], shuffle: bool
 		}
 	}
 }
+
+// let cachedVolume: number | null = null;
+export async function togglePlayback(mopidy: Mopidy) {
+	const { playback } = mopidy;
+	// const { mixer, playback } = mopidy;
+	if("playing" === await playback.getState()) {
+		//cachedVolume = await mixer.getVolume();
+		//await transitionVolume(cachedVolume, 0);
+		return playback.pause();
+	} else {
+		//await playback.resume();
+		//if(cachedVolume !== null) {
+		//	await transitionVolume(await mixer.getVolume(), cachedVolume);
+		//	cachedVolume = null;
+		//}
+		return playback.resume();
+	}
+}
+
+export async function changeVol(mopidy: Mopidy, diff: number) {
+	const { mixer } = mopidy;
+	const oldVol = await mixer.getVolume();
+	const newVol = between(0, oldVol + diff, 100);
+	return mixer.setVolume([newVol])
+}
+
+// FIXME: Mopidy has a volume change delay, and the Promise doesn't wait for it to resolve
+
+//async function transitionVolume(fromVol: number, toVol: number) {
+//	const { mixer } = mopidy;
+//	let tempVolume = fromVol;
+//	const interval = (fromVol < toVol) ? 20 : -20;
+//	do {
+//		tempVolume += interval;
+//		console.log("tempVolume", tempVolume);
+//		await mixer.setVolume([between(0, tempVolume, 100)]);
+//		await wait(200);
+//	} while(interval > 0 ? tempVolume < 100 : tempVolume > 0);
+//}
 
 function log(msg: unknown) {
 	console.log(msg);

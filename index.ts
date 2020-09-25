@@ -2,12 +2,17 @@ import Mopidy from "mopidy";
 import { exec }      from "child_process";
 import { promisify } from "util";
 
-import * as LED          from "./led";
-import * as BT           from "./bt";
-import SFX               from "./sfx";
-import { doIntent }      from "./intent";
-import { between, wait } from "./utils";
-import config            from "./config";
+import * as LED from "./led";
+import * as BT  from "./bt";
+import SFX      from "./sfx";
+import { wait } from "./utils";
+import config   from "./config";
+
+import {
+	changeVol,
+	doIntent,
+	togglePlayback,
+} from "./intent";
 
 const {
 	AUDIO_DEVICE_IN,
@@ -28,57 +33,17 @@ mopidy.on("state:online", async () => {
 	SFX.beep();
 
 	BT.listen({
-		UP:    () => changeVol( 10),
-		DOWN:  () => changeVol(-10),
+		UP:    () => changeVol(mopidy, 10),
+		DOWN:  () => changeVol(mopidy, -10),
 
 		LEFT:  async () => await mopidy.playback.previous(),
 		RIGHT: async () => await mopidy.playback.next(),
-		PLAY:  async () => await togglePlayback(),
+		PLAY:  async () => await togglePlayback(mopidy),
 
 		LISTEN_START: async () => startListening(),
 		LISTEN_DONE:  async () => stopListening(),
 	});
 });
-
-async function changeVol(diff: number) {
-	const { mixer } = mopidy;
-	SFX.beep();
-	const oldVol = await mixer.getVolume();
-	const newVol = between(0, oldVol + diff, 100);
-	LED.volumeChange(oldVol, newVol);
-	return mixer.setVolume([newVol])
-}
-
-let cachedVolume: number | null = null;
-async function togglePlayback() {
-	const { mixer, playback } = mopidy;
-	if("playing" === await playback.getState()) {
-		//cachedVolume = await mixer.getVolume();
-		//await transitionVolume(cachedVolume, 0);
-		return playback.pause();
-	} else {
-		//await playback.resume();
-		//if(cachedVolume !== null) {
-		//	await transitionVolume(await mixer.getVolume(), cachedVolume);
-		//	cachedVolume = null;
-		//}
-		return playback.resume();
-	}
-}
-
-// FIXME: Mopidy has a volume change delay, and the Promise doesn't wait for it to resolve
-
-//async function transitionVolume(fromVol: number, toVol: number) {
-//	const { mixer } = mopidy;
-//	let tempVolume = fromVol;
-//	const interval = (fromVol < toVol) ? 20 : -20;
-//	do {
-//		tempVolume += interval;
-//		console.log("tempVolume", tempVolume);
-//		await mixer.setVolume([between(0, tempVolume, 100)]);
-//		await wait(200);
-//	} while(interval > 0 ? tempVolume < 100 : tempVolume > 0);
-//}
 
 async function startListening() {
 	await mopidy.playback.pause();
