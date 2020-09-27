@@ -22,7 +22,7 @@ play [the] album <album>
 album = (${albumKeys.join(" | ")}){album}
 
 [StartPlaylist]
-<playtype> play list <playlist>
+<playtype> (play list | playlist) <playlist>
 playtype = (start | play | shuffle){action}
 playlist = (${playlistKeys.join(" | ")}){playlist}
 
@@ -52,6 +52,14 @@ stop music
 resume
 resume playing
 resume music
+
+[MusicVolumeChange]
+music volume <direction>
+turn music <direction>
+direction = (up | down){direction}
+
+[MusicVolumeSet]
+[set] music volume [to] (0..100){volume}
 
 [Reboot]
 reboot device

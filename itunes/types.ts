@@ -159,15 +159,16 @@ export type OutputMaps = ArtistMap
                        ;
 
 export interface Sfx {
-  beep:  async () => void;
-  error: async () => void;
-  ok:    async () => void;
+  beep:  () => Promise<void>;
+  error: () => Promise<void>;
+  ok:    () => Promise<void>;
 }
 
 export type LedPixel = [number, number, number];
 
-export type SlotType = "action" | "album" | "artist" | "playlist" | "track";
+export type SlotType = "action" | "album" | "artist" | "playlist" | "track" | "volume" | "direction";
 
+// TODO: Gives slots record subfield values more robust types
 export interface Message {
   intent: MessageIntent;
   slots: Partial<Record<SlotType, string>>;

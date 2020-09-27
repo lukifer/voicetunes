@@ -104,6 +104,24 @@ export async function doIntent(mopidy: Mopidy, msg: Message) {
 			playTracks(mopidy, tracksMap[slots.track].map(x => x.file), true);
 			break;
 
+		case "MusicVolumeSet":
+			if(!slots?.volume || !slots.volume.match(/^[0-9]+$/)) {
+				return err("no volume", msg);
+			}
+			setVol(mopidy, parseInt(slots.volume));
+			break;
+
+		case "MusicVolumeChange":
+			if(!slots?.direction) {
+				return err("no direction", msg);
+			}
+			if(slots.direction === "up") {
+				changeVol(mopidy, 10);
+			} else if(slots.direction === "down") {
+				changeVol(mopidy, -10);
+			}
+			break;
+
 		case "WhatIsTime":
 			const { stdout } = await execp([
 				`if [ $(date +%M) != "00" ]`,
@@ -231,6 +249,11 @@ export async function changeVol(mopidy: Mopidy, diff: number) {
 	const { mixer } = mopidy;
 	const oldVol = await mixer.getVolume();
 	const newVol = between(0, oldVol + diff, 100);
+	return mixer.setVolume([newVol])
+}
+
+export async function setVol(mopidy: Mopidy, newVol: number) {
+	const { mixer } = mopidy;
 	return mixer.setVolume([newVol])
 }
 
