@@ -166,17 +166,29 @@ export interface Sfx {
 
 export type LedPixel = [number, number, number];
 
-export type SlotType = "action" | "album" | "artist" | "playaction" | "playlist" | "playlistaction" | "track" | "volume" | "direction";
+//export type SlotType = "action" | "album" | "artist" | "playaction" | "playlist" | "playlistaction" | "track" | "volume" | "direction";
 
 export interface PlayOptions {
   shuffle?: boolean;
   queue?: boolean;
 }
 
+export interface MessageSlots {
+  album?:          string;
+  artist?:         string;
+  direction?:      "down" | "up";
+  playaction?:     "play" | "queue";
+  playlist?:       string;
+  playlistaction?: string;
+  track?:          string;
+  volume?:         number;
+}
+
 // TODO: Gives slots record subfield values more robust types
 export interface Message {
   intent: MessageIntent;
-  slots: Partial<Record<SlotType, string>>;
+  // slots: Partial<Record<SlotType, string>>;
+  slots: MessageSlots;
 }
 
 export interface MessageIntent {

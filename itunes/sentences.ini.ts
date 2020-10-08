@@ -62,7 +62,7 @@ turn music <direction>
 direction = (up | down){direction}
 
 [MusicVolumeSet]
-[set] music volume [to] (0..100){volume}
+\\[set] music volume [to] (0..100){volume}
 
 [Reboot]
 reboot device

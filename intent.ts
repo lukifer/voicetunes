@@ -107,10 +107,10 @@ export async function doIntent(mopidy: Mopidy, msg: Message) {
 			break;
 
 		case "MusicVolumeSet":
-			if(!slots?.volume || !slots.volume.match(/^[0-9]+$/)) {
+			if(!slots?.volume) {
 				return err("no volume", msg);
 			}
-			setVol(mopidy, parseInt(slots.volume));
+			setVol(mopidy, between(0, slots.volume, 100));
 			break;
 
 		case "MusicVolumeChange":
@@ -215,7 +215,7 @@ export async function playTracks(mopidy: Mopidy, tracks: string[], opts: PlayOpt
 	const start = shuffle ? rnd(tracks.length) : 0;
 	if(!queue) await tracklist.clear();
 	await tracklist.add({ "uris": [ `${URL_MUSIC}/${tracks[start]}` ] });
-	await playback.play();
+	if(!queue) await playback.play();
 
 	// then add the remainder asynchronously (shuffling if needed)
 	const { [start]: firstTrack, ...remainingTracks } = tracks;
