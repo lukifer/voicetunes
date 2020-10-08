@@ -25,5 +25,6 @@ do
     scp maps/playlistTracks.json    "$ssh"/itunes/maps/playlistTracks.json
     scp maps/tracks.json            "$ssh"/itunes/maps/tracks.json
 
-    ssh "$url" 'voice2json train-profile'
+    # FIXME: figure out how to add this PATH remotely on MacOS's SSH environment
+    ssh "$url" 'export PATH=/usr/local/bin:$PATH; voice2json train-profile'
 done

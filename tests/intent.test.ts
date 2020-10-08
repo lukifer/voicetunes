@@ -20,6 +20,14 @@ test('plays a track', async () => {
   expect(mopidy.playback.play).toHaveBeenCalled();
 });
 
+test('queues a track', async () => {
+  const mopidy = mopidyFactory();
+  await playTracks(mopidy, ["foo.mp3"], { queue: true });
+  expect(mopidy.tracklist.clear).not.toHaveBeenCalled();
+  expect(mopidy.tracklist.add).toHaveBeenCalledWith({uris: [ "file:///home/pi/music/foo.mp3" ]});
+  expect(mopidy.playback.play).toHaveBeenCalled();
+});
+
 test("parses a 'play by arist' intent", async () => {
   const mopidy = mopidyFactory();
   await doIntent(mopidy, {

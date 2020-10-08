@@ -9,26 +9,27 @@ const trackKeys    = jsonKeys("tracks");
 const playlistKeys = jsonKeys("playlistTracks");
 
 const sentences_ini = `
+
+[PlayTrack]
+playaction = (play | queue){playaction}
+<playaction> [the] [(track | song)] <track>
+track = (${trackKeys.join(" | ")}){track}
+
 [PlayArtist]
-play [something] [(by | from)] <artist>
-play artist <artist>
 artist = (${artistKeys.join(" | ")}){artist}
+<PlayTrack.playaction> [something] [(by | from)] [artist] <artist>
 
 [PlayRandomAlbumByArtist]
-play [an] album [by] <PlayArtist.artist>
+<PlayTrack.playaction> [an] album [by] <PlayArtist.artist>
 
 [PlayAlbum]
-play [the] album <album>
+<PlayTrack.playaction> [the] album <album>
 album = (${albumKeys.join(" | ")}){album}
 
 [StartPlaylist]
-<playtype> (play list | playlist) <playlist>
-playtype = (start | play | shuffle){action}
+playlistaction = (start | play | shuffle | queue | queue shuffle){action}
+<playlistaction> (play list | playlist) <playlist>
 playlist = (${playlistKeys.join(" | ")}){playlist}
-
-[PlayTrack]
-play [the] [(track | song)] <track>
-track = (${trackKeys.join(" | ")}){track}
 
 [ReadLog]
 what is the last log entry
@@ -47,6 +48,8 @@ next track
 stop
 stop playing
 stop music
+pause
+pause music
 
 [Resume]
 resume

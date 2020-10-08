@@ -2,7 +2,7 @@ import Mopidy        from "mopidy";
 import Shuffler      from "shuffle-array";
 import { exec }      from "child_process";
 import { promisify } from "util";
-import { connect } from "mqtt";
+import { connect }   from "mqtt";
 
 import config                            from "./config";
 import { readJson }                      from "./itunes/data";
@@ -20,12 +20,13 @@ const {
 } = config;
 
 import {
-  ArtistMap,
-  ArtistAlbumsMap,
-  ArtistTracksMap,
-  AlbumsMap,
-  PlaylistTracksMap,
-  TracksMap,
+	ArtistMap,
+	ArtistAlbumsMap,
+	ArtistTracksMap,
+	AlbumsMap,
+	PlayOptions,
+	PlaylistTracksMap,
+	TracksMap,
 	Message,
 } from "./itunes/types";
 
@@ -38,33 +39,32 @@ export const artistTracksMapJson   = (): ArtistTracksMap   => readJson("./itunes
 export const playlistTracksMapJson = (): PlaylistTracksMap => readJson("./itunes/maps/playlistTracks.json");
 export const tracksMapJson         = (): TracksMap         => readJson("./itunes/maps/tracks.json");
 
-const albumsMap         = albumsMapJson();
-const artistMap         = artistMapJson();
-const artistAlbumsMap   = artistAlbumsMapJson();
-const artistTracksMap   = artistTracksMapJson();
+const albumsMap         =         albumsMapJson();
+const artistMap         =         artistMapJson();
+const artistAlbumsMap   =   artistAlbumsMapJson();
+const artistTracksMap   =   artistTracksMapJson();
 const playlistTracksMap = playlistTracksMapJson();
-const tracksMap         = tracksMapJson();
+const tracksMap         =         tracksMapJson();
 
 export async function doIntent(mopidy: Mopidy, msg: Message) {
-	log(["intent msg", msg]);
+	//log(["intent msg", msg]);
 	if(!msg || !msg.intent || !msg.intent.name || !msg.slots) {
 		return err("no intent", msg);
 	}
 	const { intent, slots } = msg;
+	const { playaction, playlistaction } = slots;
+	const queue = playaction === "queue" || ["queue", "queue shuffle"].includes(playlistaction);
+
 	switch(intent.name) {
 		case "PlayArtist":
-
 			if(!slots?.artist || !artistMap[slots.artist]) {
 				return err("no artist", msg);
 			}
-
 			let tracks = artistTracksMap[slots.artist];
-			//console.log(`${tracks?.length} tracks found for ${artistMap[slots.artist]}`);
-
 			if(!tracks?.length) {
 				return err("no tracks", msg);
 			} else {
-				playTracks(mopidy, tracks.map(x => x.file), true);
+				playTracks(mopidy, tracks.map(x => x.file), { shuffle: true, queue });
 			}
 			break;
 
@@ -77,7 +77,7 @@ export async function doIntent(mopidy: Mopidy, msg: Message) {
 			if(!rndAlbum?.tracks?.length) {
 				return err("no tracks", [ msg, rndAlbum ]);
 			} else {
-				playTracks(mopidy, rndAlbum.tracks.map(x => x.file));
+				playTracks(mopidy, rndAlbum.tracks.map(x => x.file), { queue });
 			}
 			break;
 
@@ -87,21 +87,23 @@ export async function doIntent(mopidy: Mopidy, msg: Message) {
 			}
 			const albums = albumsMap[slots.album];
 			const which = albums.length === 1 ? 0 : rnd(albums.length);
-			playTracks(mopidy, albums[which].tracks.map(x => x.file));
+			playTracks(mopidy, albums[which].tracks.map(x => x.file), { queue });
 			break;
 
 		case "StartPlaylist":
 			if(!slots?.playlist || !playlistTracksMap[slots.playlist]) {
 				return err("no playlist", msg);
 			}
-			playTracks(mopidy, playlistTracksMap[slots.playlist].map(x => x.file), true);
+			const playlistFiles = playlistTracksMap[slots.playlist].map(x => x.file);
+			playTracks(mopidy, playlistFiles, { shuffle: true, queue });
 			break;
 
 		case "PlayTrack":
 			if(!slots?.track || !tracksMap[slots.track]) {
 				return err("no track", msg);
 			}
-			playTracks(mopidy, tracksMap[slots.track].map(x => x.file), true);
+			const trackFiles = tracksMap[slots.track].map(x => x.file);
+			playTracks(mopidy, trackFiles, { shuffle: true, queue });
 			break;
 
 		case "MusicVolumeSet":
@@ -199,8 +201,9 @@ async function cueRemainingTracks(mopidy: Mopidy, tracks: string[]) {
 	}
 }
 
-export async function playTracks(mopidy: Mopidy, tracks: string[], shuffle: boolean = false) {
+export async function playTracks(mopidy: Mopidy, tracks: string[], opts: PlayOptions = {}) {
 	const { playback, tracklist } = mopidy;
+	const { shuffle = false, queue = false } = opts;
 
 	if(loadingTimer) {
 		console.log("clearTimeout");
@@ -210,7 +213,7 @@ export async function playTracks(mopidy: Mopidy, tracks: string[], shuffle: bool
 
 	// cue a random track and start playing immediately
 	const start = shuffle ? rnd(tracks.length) : 0;
-	await tracklist.clear();
+	if(!queue) await tracklist.clear();
 	await tracklist.add({ "uris": [ `${URL_MUSIC}/${tracks[start]}` ] });
 	await playback.play();
 

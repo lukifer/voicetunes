@@ -166,7 +166,12 @@ export interface Sfx {
 
 export type LedPixel = [number, number, number];
 
-export type SlotType = "action" | "album" | "artist" | "playlist" | "track" | "volume" | "direction";
+export type SlotType = "action" | "album" | "artist" | "playaction" | "playlist" | "playlistaction" | "track" | "volume" | "direction";
+
+export interface PlayOptions {
+  shuffle?: boolean;
+  queue?: boolean;
+}
 
 // TODO: Gives slots record subfield values more robust types
 export interface Message {
