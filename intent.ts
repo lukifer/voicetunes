@@ -6,7 +6,9 @@ import { connect }   from "mqtt";
 
 import config                            from "./config";
 import { readJson }                      from "./itunes/data";
+import * as LED                          from "./led";
 import SFX                               from "./sfx";
+import { train }                         from "./train";
 import { arrayWrap, between, rnd, wait } from "./utils";
 
 const execp = promisify(exec);
@@ -158,6 +160,10 @@ export async function doIntent(mopidy: Mopidy, msg: Message) {
 			mopidy.playback.pause();
 			break;
 
+		case "Retrain":
+			await train();
+			break;
+
 		case "Restart":
 			if(ALLOW_SHUTDOWN) {
 				SFX.ok();
@@ -248,10 +254,11 @@ export async function togglePlayback(mopidy: Mopidy) {
 	}
 }
 
-export async function changeVol(mopidy: Mopidy, diff: number) {
+export async function changeVol(mopidy: Mopidy, diff: number, flashLed: boolean = false) {
 	const { mixer } = mopidy;
 	const oldVol = await mixer.getVolume();
 	const newVol = between(0, oldVol + diff, 100);
+	LED.volumeChange(oldVol, newVol);
 	return mixer.setVolume([newVol])
 }
 
