@@ -2,5 +2,6 @@
 node_modules
 config.local.json
 .DS_Store
-sentences.ini
+itunes/sentences.ini
+itunes/sounds_like.txt
 log.txt

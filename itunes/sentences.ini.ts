@@ -70,6 +70,9 @@ reboot device
 [Shutdown]
 shut down device
 
+[RestartMopidy]
+restart music player
+
 [Nevermind]
 nevermind
 never mind
