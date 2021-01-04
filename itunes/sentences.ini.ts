@@ -64,6 +64,9 @@ direction = (up | down){direction}
 [MusicVolumeSet]
 \\[set] music volume [to] (0..100){volume}
 
+[Retrain]
+retrain voice commands
+
 [Reboot]
 reboot device
 

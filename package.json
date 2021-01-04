@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "nodemon --watch '*.ts' --exec 'ts-node' index.ts",
+    "train": "nodemon --exec 'ts-node' train.ts",
     "test": "jest --verbose"
   },
   "author": "",

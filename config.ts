@@ -6,6 +6,7 @@ const config = {
 	AUDIO_DEVICE_OUT: "dmixer",
 	BT_BUTTON_NAME: "Tunai Button",
 	BT_DEVICE_EVENT: "/dev/input/event0",
+	DENOISE_BIN: "",
 	KEY_UP: 233,
 	KEY_DOWN: 234,
 	KEY_LEFT: 182,
@@ -14,15 +15,18 @@ const config = {
 	KEY_LISTEN: 35,
 	LED_MS: 80,
 	MAX_QUEUED_TRACKS: 100,
+	MIN_RECORD_SECONDS: 1.0,
 	MQTT_PASSTHROUGH_INTENTS: [],
 	MQTT_IP: "",
 	PATH_RAMDISK: "/tmp/ramdisk",
 	URL_MOPIDY: "ws://localhost:6680/mopidy/ws/",
 	URL_MUSIC: "file:///home/pi/music",
 	URL_ITUNES: "",
+	VOICE2JSON_BIN: "voice2json",
 	WAV_BEEP: "",
 	WAV_ERROR: "",
 	WAV_OK: "",
+	WAV_UNRECOGNIZED: "",
 };
 
 // To override defaults, create a config.local.json with matching keys
