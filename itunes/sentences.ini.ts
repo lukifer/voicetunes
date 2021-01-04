@@ -44,6 +44,12 @@ previous track
 [NextTrack]
 next track
 
+[Skip]
+direction = (forward | back){direction}
+time = (0..60){time}
+time_unit = (second | seconds | minute | minutes){time_unit}
+skip <time> <time_unit> <direction>
+
 [Stop]
 stop
 stop playing
@@ -69,6 +75,9 @@ reboot device
 
 [Shutdown]
 shut down device
+
+[RestartMopidy]
+restart music player
 
 [Nevermind]
 nevermind

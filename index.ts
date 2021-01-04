@@ -17,13 +17,15 @@ import {
 const {
 	AUDIO_DEVICE_IN,
 	AUDIO_DEVICE_OUT,
+	MIN_LISTEN_DURATION_MS,
+	PATH_RAMDISK,
 	URL_MOPIDY,
 } = config;
 
 const execp = promisify(exec);
 
 SFX.init(AUDIO_DEVICE_OUT);
-const mopidy = new Mopidy({ webSocketUrl: URL_MOPIDY });
+export const mopidy = new Mopidy({ webSocketUrl: URL_MOPIDY });
 LED.open();
 
 mopidy.on("state:online", async () => {
@@ -33,33 +35,38 @@ mopidy.on("state:online", async () => {
 	SFX.beep();
 
 	BT.listen({
-		UP:    () => changeVol(mopidy, 10),
-		DOWN:  () => changeVol(mopidy, -10),
+		UP:    () => changeVol( 10),
+		DOWN:  () => changeVol(-10),
 
 		LEFT:  async () => await mopidy.playback.previous(),
 		RIGHT: async () => await mopidy.playback.next(),
-		PLAY:  async () => await togglePlayback(mopidy),
+		PLAY:  async () => await togglePlayback(),
 
 		LISTEN_START: async () => startListening(),
 		LISTEN_DONE:  async () => stopListening(),
 	});
 });
 
+let listenStartTimestamp = 0;
+
 async function startListening() {
+	listenStartTimestamp = +(new Date);
 	await mopidy.playback.pause();
+	// FIXME: SIG_STOP
 	await execp(`if pgrep arecord;    then sudo killall -q arecord;    fi`);
 	await execp(`if pgrep voice2json; then sudo killall -q voice2json; fi`);
 	LED.startSpinSlow();
 	SFX.beep();
 	const { stdout } = await execp([
-		`sudo arecord -q -D ${AUDIO_DEVICE_IN} --duration=20 --rate=16000 --format=S16_LE`,
+		`sudo arecord -q -D ${AUDIO_DEVICE_IN} -t raw --duration=20 --rate=16000 --format=S16_LE`,
+		`tee ${PATH_RAMDISK}/input.raw`,
 		`voice2json transcribe-stream -c 1 -a -`,
 		`voice2json recognize-intent`,
 	].join(" | "));
 
 	const msg = stdout[0] === "{" && JSON.parse(stdout);
 	if(msg) {
-		await doIntent(mopidy, msg);
+		await doIntent(msg);
 	} else {
 		err("invalid json", stdout);
 	}
@@ -67,10 +74,15 @@ async function startListening() {
 }
 
 async function stopListening() {
-	LED.startSpinFast();
-	await wait(200); // a little trailing audio seems to help accuracy
-	await execp("sudo killall -q arecord");
-	SFX.ok();
+	const listenDurationMs = +(new Date) - listenStartTimestamp;
+	if(listenDurationMs > MIN_LISTEN_DURATION_MS) {
+		LED.startSpinFast();
+		await wait(100); // a little trailing audio seems to help accuracy
+		await execp("sudo killall -q arecord");
+		SFX.ok();
+	} else {
+		LED.stopSpin();
+	}
 }
 
 function err(msg: string, also: unknown) {

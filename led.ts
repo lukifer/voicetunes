@@ -7,11 +7,12 @@ import { LedPixel }     from "./itunes/types";
 
 const { LED_MS } = config;
 const rndColor = (base: number, change: number) => between(100, base - change + rnd(change*2), 255);
+const Array12 = [...Array(12)];
 
 let timer: NodeJS.Timeout = null;
 let pos = 0;
 let curColor: LedPixel = [100+rnd(156), 100+rnd(156), 100+rnd(156)];
-let ledColors: LedPixel[] = [...Array(12)].fill([0, 0, 0]);
+let ledColors: LedPixel[] = [...Array12].fill([0, 0, 0]);
 
 const led = new Gpio(5, 'out');
 export function open() { led.writeSync(1); }
@@ -55,23 +56,27 @@ export function flair(speed = 40) {
 }
 
 export function volumeChange(oldVol: number, newVol: number) {
-	//console.log(`${oldVol} -> ${newVol}`);
+// 	console.log(`${oldVol} -> ${newVol}`);
 	const up = newVol > oldVol;
 	const maxBright = 4;
 	let   curBright = 0;
+	const volDiff = Math.abs(oldVol - newVol);
+	const lightsDiff = Math.round(volDiff / 10);
 	const lights = 1 + Number(Math.max(oldVol, newVol) / 10);
 	if(timer) clearInterval(timer)
 	timer = setInterval(() => {
 		if(curBright > (maxBright*2.5)) {
 			clearInterval(timer);
 			timer = null;
-			[...Array(12)].map((_, n) => LedDriver.setLedColor(n, 0, 0, 0, 0));
+			Array12.map((_, n) => LedDriver.setLedColor(n, 0, 0, 0, 0));
 		} else {
-			[...Array(12)].map((_, n) => {
+			let changed = [];
+			Array12.map((_, n) => {
 				if (n > lights) {
 					LedDriver.setLedColor(n, 0, 0, 0, 0);
 				} else {
-					const bright = n === lights
+					const lightIsInFlux = n > (lights - lightsDiff);
+					const bright = lightIsInFlux
 						? oldVol !== newVol
 							? up
 								? 0         + curBright
@@ -81,8 +86,7 @@ export function volumeChange(oldVol: number, newVol: number) {
 								: maxBright
 						: maxBright;
 					const filteredBright = between(0, bright, maxBright);
-					//if(n === lights) console.log(`lights:${lights} n:${n} bright:${bright}`);
-					const color = n === lights
+					const color = lightIsInFlux
 						? curColor.map(x => Number(x * filteredBright / maxBright)) as LedPixel
 						: curColor
 					LedDriver.setLedColor(n, filteredBright, ...color);
