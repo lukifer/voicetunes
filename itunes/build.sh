@@ -8,6 +8,7 @@ npm i
 ./mkjson.sh
 ts-node itunes.ts
 ts-node sentences.ini.ts
+touch sounds_like.txt
 
 for ssh in "$@"
 do
@@ -16,6 +17,7 @@ do
 
     ssh "$url" 'touch ~/.config/voice2json/sentences.base.ini'
     scp sentences.ini "$url":~/.config/voice2json/sentences.music.ini
+    scp sounds_like.txt "$url":~/.config/voice2json/sounds_like.txt
     ssh "$url" 'cd ~/.config/voice2json/ && cat sentences.base.ini sentences.music.ini > sentences.ini'
 
     scp maps/albums.json            "$ssh"/itunes/maps/albums.json

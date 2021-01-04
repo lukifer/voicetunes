@@ -2,11 +2,11 @@ import Mopidy from "mopidy";
 import { exec }      from "child_process";
 import { promisify } from "util";
 
-import * as LED from "./led";
-import * as BT  from "./bt";
-import SFX      from "./sfx";
-import { wait } from "./utils";
-import config   from "./config";
+import * as LED      from "./led";
+import * as BT       from "./bt";
+import SFX           from "./sfx";
+import { now, wait } from "./utils";
+import config        from "./config";
 
 import {
 	changeVol,
@@ -17,9 +17,11 @@ import {
 const {
 	AUDIO_DEVICE_IN,
 	AUDIO_DEVICE_OUT,
+	DENOISE_BIN,
 	MIN_LISTEN_DURATION_MS,
 	PATH_RAMDISK,
 	URL_MOPIDY,
+	VOICE2JSON_BIN,
 } = config;
 
 const execp = promisify(exec);
@@ -50,7 +52,7 @@ mopidy.on("state:online", async () => {
 let listenStartTimestamp = 0;
 
 async function startListening() {
-	listenStartTimestamp = +(new Date);
+	listenStartTimestamp = now();
 	await mopidy.playback.pause();
 	// FIXME: SIG_STOP
 	await execp(`if pgrep arecord;    then sudo killall -q arecord;    fi`);
@@ -60,17 +62,37 @@ async function startListening() {
 	const { stdout } = await execp([
 		`sudo arecord -q -D ${AUDIO_DEVICE_IN} -t raw --duration=20 --rate=16000 --format=S16_LE`,
 		`tee ${PATH_RAMDISK}/input.raw`,
-		`voice2json transcribe-stream -c 1 -a -`,
-		`voice2json recognize-intent`,
+		`${VOICE2JSON_BIN} transcribe-stream -c 1 -a -`,
+		`tee ${PATH_RAMDISK}/input.txt`,
+		`${VOICE2JSON_BIN} recognize-intent`,
 	].join(" | "));
 
 	const msg = stdout[0] === "{" && JSON.parse(stdout);
 	if(msg) {
 		await doIntent(msg);
+		LED.stopSpin();
 	} else {
+		if(DENOISE_BIN) {
+			await execp([
+				`cd ${PATH_RAMDISK}`,
+				`cat input.wav | tail -c +45 > input.pcm`,
+				`${DENOISE_BIN} input.pcm denoised.pcm`,
+				`sox -t raw -r 16000 -b 16 -c 1 -L -e signed-integer denoised.pcm denoised.wav`,
+			].join(";"));
+			const { stdout } = await execp([
+				`${VOICE2JSON_BIN} transcribe-wav < ${PATH_RAMDISK}/denoised.wav`,
+				`tee ${PATH_RAMDISK}/denoised.txt`,
+				`${VOICE2JSON_BIN} recognize-intent`,
+			].join(" | "));
+			const msg2 = stdout[0] === "{" && JSON.parse(stdout);
+			if(msg2) {
+				await doIntent(mopidy, msg2);
+				LED.stopSpin();
+				return;
+			}
+		}
 		err("invalid json", stdout);
 	}
-	LED.stopSpin();
 }
 
 async function stopListening() {

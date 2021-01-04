@@ -23,6 +23,7 @@ const config = {
 		KEY_PLAY: "",
 		KEY_LISTEN: "",
 	},
+	DENOISE_BIN: "",
 	KEY_UP: 233,
 	KEY_DOWN: 234,
 	KEY_LEFT: 182,
@@ -39,9 +40,11 @@ const config = {
 	URL_MUSIC: "file:///home/pi/music",
 	URL_ITUNES: "",
 	USE_LED: true,
+	VOICE2JSON_BIN: "voice2json",
 	WAV_BEEP: "",
 	WAV_ERROR: "",
 	WAV_OK: "",
+	WAV_UNRECOGNIZED: "",
 };
 
 // To override defaults, create a config.local.json with matching keys

@@ -71,10 +71,7 @@ export function scrubTrackName(trackName: string): TrackSentence {
 export function scrubArtistName(artistName: string): ArtistSentence {
   const artistLower = (substitutions.artists[artistName] || artistName).toLowerCase();
   return scrub(artistLower)
-    .replace(  /dj\s/g, "dee jay ")
-    .replace(  /mc\s/g, "em see ")
     .replace( /^mr\s/g, "mister ")
-    .replace(/\svs\s/g, " versus ")
     .replace(/[0-9]+/g, numberWords)
     .replace(   /\s+/g, " ")
     .trim()

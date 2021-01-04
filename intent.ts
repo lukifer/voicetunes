@@ -9,6 +9,7 @@ import { mopidy }                        from "./index";
 import { readJson }                      from "./itunes/data";
 import * as LED                          from "./led";
 import SFX                               from "./sfx";
+import { train }                         from "./train";
 import { arrayWrap, between, rnd, wait } from "./utils";
 
 const execp = promisify(exec);
@@ -193,6 +194,10 @@ export async function doIntent(msg: Message) {
 			//TODO
 			break;
 
+		case "Retrain":
+			await train();
+			break;
+
 		case "Restart":
 			if(ALLOW_SHUTDOWN) {
 				SFX.ok();
@@ -283,7 +288,7 @@ export async function togglePlayback() {
 	}
 }
 
-export async function changeVol(diff: number, ledFunc?: (oldv: number, newv: number) => void) {
+export async function changeVol(diff: number) {
 	const { mixer } = mopidy;
 	const oldVol = await mixer.getVolume();
 	const newVol = between(0, oldVol + diff, 100);
