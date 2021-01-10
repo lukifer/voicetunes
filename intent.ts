@@ -1,10 +1,11 @@
-import Mopidy        from "mopidy";
-import Shuffler      from "shuffle-array";
-import { exec }      from "child_process";
-import { promisify } from "util";
-import { connect }   from "mqtt";
+import Mopidy          from "mopidy";
+import Shuffler        from "shuffle-array";
+import { exec, spawn } from "child_process";
+import { promisify }   from "util";
+import { connect }     from "mqtt";
 
 import config                            from "./config";
+import { mopidy }                        from "./index";
 import { readJson }                      from "./itunes/data";
 import * as LED                          from "./led";
 import SFX                               from "./sfx";
@@ -19,6 +20,7 @@ const {
 	MQTT_IP,
 	MQTT_PASSTHROUGH_INTENTS,
 	URL_MUSIC,
+	USE_LED,
 } = config;
 
 import {
@@ -48,7 +50,35 @@ const artistTracksMap   =   artistTracksMapJson();
 const playlistTracksMap = playlistTracksMapJson();
 const tracksMap         =         tracksMapJson();
 
-export async function doIntent(mopidy: Mopidy, msg: Message) {
+let cachedIntents: {[text: string]: Message} = {};
+export async function textToIntent(text: string): Promise<Message> {
+	//console.log("textToIntent", text, "cached="+(!!cachedIntents[text]));
+	if(!cachedIntents[text]) {
+		var recognizeProc = spawn("voice2json", [
+			"recognize-intent",
+			"--replace-numbers",
+			"--text-input",
+		]);
+		return new Promise((resolve, reject) => {
+			recognizeProc.stdout.on("data", (messageJson) => {
+				//console.log("messageJson", messageJson.toString());
+				try {
+					const message = JSON.parse(messageJson.toString()) as Message;
+					cachedIntents[text] = message as Message;
+					resolve(message as Message);
+				} catch(err) {
+					reject(err);
+				}
+			});
+			recognizeProc.stdin.write(text);
+			recognizeProc.stdin.end();
+		});
+	} else {
+		return cachedIntents[text] as Message;
+	}
+}
+
+export async function doIntent(msg: Message) {
 	//log(["intent msg", msg]);
 	if(!msg || !msg.intent || !msg.intent.name || !msg.slots) {
 		return err("no intent", msg);
@@ -66,7 +96,7 @@ export async function doIntent(mopidy: Mopidy, msg: Message) {
 			if(!tracks?.length) {
 				return err("no tracks", msg);
 			} else {
-				playTracks(mopidy, tracks.map(x => x.file), { shuffle: true, queue });
+				playTracks(tracks.map(x => x.file), { shuffle: true, queue });
 			}
 			break;
 
@@ -79,7 +109,7 @@ export async function doIntent(mopidy: Mopidy, msg: Message) {
 			if(!rndAlbum?.tracks?.length) {
 				return err("no tracks", [ msg, rndAlbum ]);
 			} else {
-				playTracks(mopidy, rndAlbum.tracks.map(x => x.file), { queue });
+				playTracks(rndAlbum.tracks.map(x => x.file), { queue });
 			}
 			break;
 
@@ -89,7 +119,7 @@ export async function doIntent(mopidy: Mopidy, msg: Message) {
 			}
 			const albums = albumsMap[slots.album];
 			const which = albums.length === 1 ? 0 : rnd(albums.length);
-			playTracks(mopidy, albums[which].tracks.map(x => x.file), { queue });
+			playTracks(albums[which].tracks.map(x => x.file), { queue });
 			break;
 
 		case "StartPlaylist":
@@ -97,7 +127,7 @@ export async function doIntent(mopidy: Mopidy, msg: Message) {
 				return err("no playlist", msg);
 			}
 			const playlistFiles = playlistTracksMap[slots.playlist].map(x => x.file);
-			playTracks(mopidy, playlistFiles, { shuffle: true, queue });
+			playTracks(playlistFiles, { shuffle: true, queue });
 			break;
 
 		case "PlayTrack":
@@ -105,14 +135,14 @@ export async function doIntent(mopidy: Mopidy, msg: Message) {
 				return err("no track", msg);
 			}
 			const trackFiles = tracksMap[slots.track].map(x => x.file);
-			playTracks(mopidy, trackFiles, { shuffle: true, queue });
+			playTracks(trackFiles, { shuffle: true, queue });
 			break;
 
 		case "MusicVolumeSet":
 			if(!slots?.volume) {
 				return err("no volume", msg);
 			}
-			setVol(mopidy, between(0, slots.volume, 100));
+			setVol(between(0, slots.volume, 100));
 			break;
 
 		case "MusicVolumeChange":
@@ -120,9 +150,9 @@ export async function doIntent(mopidy: Mopidy, msg: Message) {
 				return err("no direction", msg);
 			}
 			if(slots.direction === "up") {
-				changeVol(mopidy, 10);
+				changeVol(10);
 			} else if(slots.direction === "down") {
-				changeVol(mopidy, -10);
+				changeVol(-10);
 			}
 			break;
 
@@ -158,6 +188,10 @@ export async function doIntent(mopidy: Mopidy, msg: Message) {
 
 		case "Stop":
 			mopidy.playback.pause();
+			break;
+
+		case "RestartMopidy":
+			//TODO
 			break;
 
 		case "Retrain":
@@ -197,17 +231,17 @@ export async function doIntent(mopidy: Mopidy, msg: Message) {
 
 let loadingTimer: ReturnType<typeof setTimeout> | null = null;
 
-async function cueRemainingTracks(mopidy: Mopidy, tracks: string[]) {
+async function cueRemainingTracks(tracks: string[]) {
 	const { tracklist } = mopidy;
 	console.log("cueing "+tracks.length);
 	await tracklist.add({ uris: tracks.slice(0, 5).map(file => `${URL_MUSIC}/${file}`) });
 	if(tracks.length > 5) {
 		await wait(500);
-		await cueRemainingTracks(mopidy, tracks.slice(5));
+		await cueRemainingTracks(tracks.slice(5));
 	}
 }
 
-export async function playTracks(mopidy: Mopidy, tracks: string[], opts: PlayOptions = {}) {
+export async function playTracks(tracks: string[], opts: PlayOptions = {}) {
 	const { playback, tracklist } = mopidy;
 	const { shuffle = false, queue = false } = opts;
 
@@ -229,15 +263,15 @@ export async function playTracks(mopidy: Mopidy, tracks: string[], opts: PlayOpt
 	if(picks) {
 		if(shuffle) {
 			const shuffled = Shuffler.pick(Object.values(remainingTracks), { picks });
-			cueRemainingTracks(mopidy, arrayWrap(shuffled));
+			cueRemainingTracks(arrayWrap(shuffled));
 		} else {
-			cueRemainingTracks(mopidy, Object.values(remainingTracks).slice(0, picks));
+			cueRemainingTracks(Object.values(remainingTracks).slice(0, picks));
 		}
 	}
 }
 
 // let cachedVolume: number | null = null;
-export async function togglePlayback(mopidy: Mopidy) {
+export async function togglePlayback() {
 	const { playback } = mopidy;
 	// const { mixer, playback } = mopidy;
 	if("playing" === await playback.getState()) {
@@ -254,16 +288,22 @@ export async function togglePlayback(mopidy: Mopidy) {
 	}
 }
 
-export async function changeVol(mopidy: Mopidy, diff: number, flashLed: boolean = false) {
+export async function changeVol(diff: number) {
 	const { mixer } = mopidy;
 	const oldVol = await mixer.getVolume();
 	const newVol = between(0, oldVol + diff, 100);
-	LED.volumeChange(oldVol, newVol);
-	return mixer.setVolume([newVol])
+	const setPromise = mixer.setVolume([newVol])
+	if(USE_LED) LED.volumeChange(oldVol, newVol);
+	return setPromise;
 }
 
-export async function setVol(mopidy: Mopidy, newVol: number) {
+export async function setVol(newVol: number) {
 	const { mixer } = mopidy;
+	if(USE_LED) {
+		const oldVol = await mixer.getVolume();
+		//console.log("volumeChange", oldVol, newVol);
+		LED.volumeChange(oldVol, newVol);
+	}
 	return mixer.setVolume([newVol])
 }
 
