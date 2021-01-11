@@ -5,8 +5,9 @@
   "main": "index.js",
   "scripts": {
     "start": "nodemon --watch '*.ts' --exec 'ts-node' index.ts",
-    "train": "nodemon --exec 'ts-node' train.ts",
-    "test": "jest --verbose"
+    "startnu": "nodemon --watch '*.ts' --exec 'ts-node' indexnu.ts",
+    "test": "jest --verbose",
+    "train": "nodemon --exec 'ts-node' train.ts"
   },
   "author": "",
   "license": "ISC",
@@ -16,6 +17,7 @@
     "@types/shuffle-array": "^1.0.0",
     "apa102-spi": "0.0.6",
     "jest": "^26.1.0",
+    "mic": "^2.1.2",
     "minimist": "^1.2.3",
     "mopidy": "^1.0.1",
     "mqtt": "^4.2.1",
