@@ -1,3 +1,5 @@
+export type StringMap = Record<string, string>;
+export type StringTuple = [string, string];
 export type StringReplaceTuple = [string | RegExp, string];
 
 export interface iTunesAlbumTrack {
@@ -8,6 +10,7 @@ export interface iTunesAlbumTrack {
   Location:        string | undefined;
   "Disc Number"?:  number | null;
   "Track Number"?: number | null;
+  "Year"?:         number | null;
 }
 
 export interface iTunesAlbum {
@@ -29,7 +32,6 @@ export interface iTunesTrack extends iTunesAlbumTrack {
   "Total Time":             number;
   "Disc Count"?:            number | null;
   "Track Count"?:           number | null;
-  Year?:                    number | null;
   "Date Modified"?:         string | null;
   "Date Added"?:            string | null;
   "Play Count"?:            number | null;
@@ -130,6 +132,7 @@ export type Track = {
   file:         string;
   number?:      number;
   disc?:        number;
+  year?:        number;
 };
 
 export type Album = {
@@ -137,6 +140,7 @@ export type Album = {
   artist: Artist;
   path:   string;
   tracks: Track[];
+  year?:  number;
 };
 
 export type iTunesEntity = iTunesAlbum | iTunesArtist | iTunesPlaylist | iTunesTrack;
@@ -158,12 +162,6 @@ export type OutputMaps = ArtistMap
                        | TracksMap
                        ;
 
-export interface Sfx {
-  beep:  () => Promise<void>;
-  error: () => Promise<void>;
-  ok:    () => Promise<void>;
-}
-
 export type LedPixel = [number, number, number];
 
 //export type SlotType = "action" | "album" | "artist" | "playaction" | "playlist" | "playlistaction" | "track" | "volume" | "direction";
@@ -175,6 +173,7 @@ export interface PlayOptions {
 
 export interface MessageSlots {
   album?:          string;
+  albumnum?:       string;
   artist?:         string;
   direction?:      "down" | "up";
   playaction?:     "play" | "queue";
