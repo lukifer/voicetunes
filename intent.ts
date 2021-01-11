@@ -1,4 +1,3 @@
-import Mopidy          from "mopidy";
 import Shuffler        from "shuffle-array";
 import { exec, spawn } from "child_process";
 import { promisify }   from "util";
@@ -32,6 +31,8 @@ import {
 	PlaylistTracksMap,
 	TracksMap,
 	Message,
+	StringMap,
+	StringTuple,
 } from "./itunes/types";
 
 const mqttClient = MQTT_IP && connect(`mqtt://${MQTT_IP}`);
@@ -42,6 +43,12 @@ export const artistAlbumsMapJson   = (): ArtistAlbumsMap   => readJson("./itunes
 export const artistTracksMapJson   = (): ArtistTracksMap   => readJson("./itunes/maps/artistTracks.json");
 export const playlistTracksMapJson = (): PlaylistTracksMap => readJson("./itunes/maps/playlistTracks.json");
 export const tracksMapJson         = (): TracksMap         => readJson("./itunes/maps/tracks.json");
+
+const ordinalToNum = readJson("./ordinalWords.json")
+	.reduce((acc: StringMap, x: StringTuple) => ({
+		...acc,
+		[x[1]]: parseInt(x[0])
+	}), {} as StringMap);
 
 const albumsMap         =         albumsMapJson();
 const artistMap         =         artistMapJson();
@@ -111,6 +118,19 @@ export async function doIntent(msg: Message) {
 			} else {
 				playTracks(rndAlbum.tracks.map(x => x.file), { queue });
 			}
+			break;
+
+		case "PlayArtistAlbumByNumber":
+			console.log(msg, slots);
+			if(!slots.albumnum || !slots?.artist || !artistAlbumsMap[slots.artist]?.length) {
+				return err("no artist or album number", msg);
+			}
+			const albumIndex = ordinalToNum[slots.albumnum] || 0;
+			const artistAlbums = artistAlbumsMap[slots.artist];
+			if(!artistAlbums[albumIndex]) {
+				return err(`no ${slots.albumnum} album for ${slots.artist}`, msg);
+			}
+			playTracks(artistAlbums[albumIndex].tracks.map(x => x.file), { queue });
 			break;
 
 		case "PlayAlbum":

@@ -14,7 +14,7 @@ const mopidyFactory = () => ({
 
 test('plays a track', async () => {
   const mopidy = mopidyFactory();
-  await playTracks(mopidy, ["foo.mp3"]);
+  await playTracks(["foo.mp3"]);
   expect(mopidy.tracklist.clear).toHaveBeenCalled();
   expect(mopidy.tracklist.add).toHaveBeenCalledWith({uris: [ "file:///home/pi/music/foo.mp3" ]});
   expect(mopidy.playback.play).toHaveBeenCalled();
@@ -22,7 +22,7 @@ test('plays a track', async () => {
 
 test('queues a track', async () => {
   const mopidy = mopidyFactory();
-  await playTracks(mopidy, ["foo.mp3"], { queue: true });
+  await playTracks(["foo.mp3"], { queue: true });
   expect(mopidy.tracklist.clear).not.toHaveBeenCalled();
   expect(mopidy.tracklist.add).toHaveBeenCalledWith({uris: [ "file:///home/pi/music/foo.mp3" ]});
   expect(mopidy.playback.play).not.toHaveBeenCalled();
@@ -30,7 +30,7 @@ test('queues a track', async () => {
 
 test("parses a 'play by arist' intent", async () => {
   const mopidy = mopidyFactory();
-  await doIntent(mopidy, {
+  await doIntent({
     intent: {name: "PlayArtist"},
     slots: {artist: "ah ha"},
   });

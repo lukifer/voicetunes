@@ -18,6 +18,6 @@ mopidy.on("state:online", async () => {
 	await mopidy.tracklist.clear();
 
 	mqttClient.on("message", (_topic, message) => {
-		doIntent(mopidy, JSON.parse(message.toString()));
+		doIntent(JSON.parse(message.toString()));
 	});
 });

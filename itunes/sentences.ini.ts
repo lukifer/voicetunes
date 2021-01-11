@@ -3,6 +3,8 @@ import * as fs from "fs";
 import { readJson } from "./data";
 const jsonKeys = (str: string) => Object.keys(readJson(`./maps/${str}.json`));
 
+const ordinalWordsJson = readJson("./ordinalWords.json");
+
 const albumKeys    = jsonKeys("albums");
 const artistKeys   = jsonKeys("artist");
 const trackKeys    = jsonKeys("tracks");
@@ -21,6 +23,10 @@ artist = (${artistKeys.join(" | ")}){artist}
 
 [PlayRandomAlbumByArtist]
 <PlayTrack.playaction> [an] album [by] <PlayArtist.artist>
+
+[PlayArtistAlbumByNumber]
+albumnum = (${ordinalWordsJson.map((x: string[]) => x[1]).join(" | ")}){albumnum}
+<PlayTrack.playaction> [the] <albumnum> album [(of | by | from)] <PlayArtist.artist>
 
 [PlayAlbum]
 <PlayTrack.playaction> [the] album <album>

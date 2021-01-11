@@ -58,6 +58,28 @@ function albumTrackSort(a: iTunesAlbumTrack, b: iTunesAlbumTrack) {
     ;
 }
 
+function chronologicalAlbumSort(a: Album, b: Album) {
+  return (a.year && b.year && a.year !== b.year)
+    ? a.year > b.year ? 1 : -1
+    : a.name.localeCompare(b.name)
+    ;
+}
+
+function albumYear(album: iTunesAlbum) {
+  const yearCount = album.Tracks
+    .reduce((acc, t) => t.Year ? {
+      ...acc,
+      [t.Year]: (acc[t.Year] || 0) + 1,
+    } : acc, {})
+  const yearModeTuple = Object.keys(yearCount)
+    .reduce((yearTuple, year) => (
+      yearCount[year] > yearTuple[0]
+        ? [yearCount[year], year]
+        : yearTuple
+    ), [0, null]);
+  return yearModeTuple[1];
+}
+
 const songFileRegex = /\.m(p3|4a)$/i;
 
 const fourStarArtistFilter: Record<Artist, boolean> =
@@ -115,6 +137,7 @@ function processTracks(tracks: iTunesAlbumTrack[]): Track[] {
       number:      track["Track Number"],
       disc:        track["Disc Number"] || 1,
       file:        track.Location.replace(iTunesPath, ""),
+      year:        track.Year,
     };
   }).filter(track => track && songFileRegex.test(track.file));
 }
@@ -128,6 +151,7 @@ function processAlbum(album: iTunesAlbum): Album {
     name:   album.Name,
     artist: album.Artist,
     path:   album.Location.replace(iTunesPath, ""),
+    year:   albumYear(album),
     tracks: processTracks(album.Tracks.sort(albumTrackSort)),
   };
 }
@@ -151,6 +175,7 @@ function addTrackToAlbums(track: iTunesTrack) {
     "Track Number": track["Track Number"],
     "Disc Number":  track["Disc Number"] || 1,
     Location:       track.Location.replace(iTunesPath, ""),
+    Year:           track.Year,
   } as iTunesAlbumTrack);
 }
 
@@ -218,7 +243,12 @@ const artistAlbumsMap: ArtistAlbumsMap = Object.keys(albumsBuildMap)
       ],
     };
   }, {} as ArtistAlbumsMap);
-writeOut("artistAlbums", artistAlbumsMap);
+const artistAlbumsMapSorted: ArtistAlbumsMap = Object.keys(artistAlbumsMap)
+  .reduce((acc: ArtistAlbumsMap, artistAlbumKey: ArtistAndAlbum): ArtistAlbumsMap => ({
+    ...acc,
+    [artistAlbumKey]: artistAlbumsMap[artistAlbumKey].sort(chronologicalAlbumSort),
+  }), {} as ArtistAlbumsMap);
+writeOut("artistAlbums", artistAlbumsMapSorted);
 
 const albumsData = Object.values(albumsBuildMap).map((album: iTunesAlbum) => ({
   ...album,
