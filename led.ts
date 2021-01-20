@@ -56,6 +56,26 @@ export function flair(speed = 40) {
 	setTimeout(() => stopSpin(), speed*13);
 }
 
+export function flash(color: LedPixel, count: number, speed: number = 60) {
+	let iter = count * 2;
+	const fn = () => {
+		const on = iter % 2;
+		ledColors.map((_, n) => on
+			? LedDriver.setLedColor(n, 1, ...color)
+			: LedDriver.setLedColor(n, 0, 0, 0, 0)
+		);
+		LedDriver.sendLeds();
+		LedDriver.sendLeds();
+		iter--;
+		if(iter >= 0) setTimeout(fn, speed);
+	}
+	fn();
+}
+
+export function flashErr() {
+	flash([255, 0, 0], 3);
+}
+
 export function volumeChange(oldVol: number, newVol: number) {
 // 	console.log(`${oldVol} -> ${newVol}`);
 	const up = newVol > oldVol;

@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon --watch '*.ts' --exec 'ts-node' index.ts",
-    "startnu": "nodemon --watch '*.ts' --exec 'ts-node' indexnu.ts",
+    "start": "nodemon --watch '*.ts' --exec 'npx ts-node' index.ts >> log.txt",
+    "mqtt": "nodemon --watch '*.ts' --exec 'npx ts-node' mqttlisten.ts >> log.txt",
     "test": "jest --verbose",
     "train": "nodemon --exec 'ts-node' train.ts"
   },
