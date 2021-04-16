@@ -18,6 +18,7 @@ const {
 	AUDIO_DEVICE_IN,
 	AUDIO_DEVICE_OUT,
 	DENOISE_BIN,
+	DENOISE_SOX,
 	MIN_LISTEN_DURATION_MS,
 	PATH_RAMDISK,
 	URL_MOPIDY,
@@ -49,7 +50,34 @@ mopidy.on("state:online", async () => {
 	});
 });
 
+async function denoise() {
+	const fmtRaw = "-t raw -r 16000 -b 16 -c 1 -L -e signed-integer";
+	let cmd: string[] = [`cd ${PATH_RAMDISK}`];
+	if(DENOISE_BIN) {
+		cmd = [
+			...cmd,
+			`cat input.raw | ${DENOISE_BIN} > denoised.raw`,
+			`sox ${fmtRaw} denoised.raw denoised.wav`,
+		];
+	} else if(DENOISE_SOX) {
+		const denoiseNum = DENOISE_SOX === true ? 0.15 : DENOISE_SOX;
+		cmd = [
+			...cmd,
+			`sox ${fmtRaw} input.raw --null trim 0 0.3 noiseprof`,
+			`sox ${fmtRaw} input.raw -t wav denoised.wav noisered - ${denoiseNum} 2> /dev/null`,
+		];
+	} else {
+		cmd = [
+			...cmd,
+			`sox ${fmtRaw} input.raw denoised.wav`,
+		];
+	}
+	await execp(cmd.join(";"));
+}
+
 let listenStartTimestamp = 0;
+let listenDurationMs     = 0;
+
 
 async function startListening() {
 	listenStartTimestamp = now();
@@ -57,9 +85,11 @@ async function startListening() {
 	// FIXME: SIG_STOP
 	await execp(`if pgrep arecord;    then sudo killall -q arecord;    fi`);
 	await execp(`if pgrep voice2json; then sudo killall -q voice2json; fi`);
+	await execp(`if pgrep sox;        then sudo killall -q sox;        fi`);
+	await execp(`if pgrep rnnoise;    then sudo killall -q rnnoise;    fi`);
 	LED.startSpinSlow();
 	SFX.beep();
-	const { stdout } = await execp([
+	let { stdout } = await execp([
 		`sudo arecord -q -D ${AUDIO_DEVICE_IN} -t raw --duration=20 --rate=16000 --format=S16_LE`,
 		`tee ${PATH_RAMDISK}/input.raw`,
 		`${VOICE2JSON_BIN} transcribe-stream -c 1 -a -`,
@@ -67,43 +97,45 @@ async function startListening() {
 		`${VOICE2JSON_BIN} recognize-intent`,
 	].join(" | "));
 
-	const msg = stdout[0] === "{" && JSON.parse(stdout);
+	if(listenDurationMs < MIN_LISTEN_DURATION_MS) {
+		console.log("negatory");
+		return;
+	}
+
+	let msg = stdout[0] === "{" && JSON.parse(stdout);
+
 	if(msg) {
 		await doIntent(msg);
 		LED.stopSpin();
-	} else {
-		if(DENOISE_BIN) {
-			await execp([
-				`cd ${PATH_RAMDISK}`,
-				`cat input.wav | tail -c +45 > input.pcm`,
-				`${DENOISE_BIN} input.pcm denoised.pcm`,
-				`sox -t raw -r 16000 -b 16 -c 1 -L -e signed-integer denoised.pcm denoised.wav`,
-			].join(";"));
-			const { stdout } = await execp([
-				`${VOICE2JSON_BIN} transcribe-wav < ${PATH_RAMDISK}/denoised.wav`,
-				`tee ${PATH_RAMDISK}/denoised.txt`,
-				`${VOICE2JSON_BIN} recognize-intent`,
-			].join(" | "));
-			const msg2 = stdout[0] === "{" && JSON.parse(stdout);
-			if(msg2) {
-				await doIntent(mopidy, msg2);
-				LED.stopSpin();
-				return;
-			}
-		}
-		err("invalid json", stdout);
+		return;
 	}
+
+	LED.startSpinFaster();
+	await denoise();
+	({ stdout } = await execp([
+		`${VOICE2JSON_BIN} transcribe-wav < ${PATH_RAMDISK}/denoised.wav`,
+		`tee ${PATH_RAMDISK}/denoised.txt`,
+		`${VOICE2JSON_BIN} recognize-intent`,
+	].join(" | ")));
+	msg = stdout[0] === "{" && JSON.parse(stdout);
+	if(msg) {
+		await doIntent(msg);
+		LED.stopSpin();
+		return;
+	}
+
+	LED.stopSpin();
 }
 
 async function stopListening() {
-	const listenDurationMs = +(new Date) - listenStartTimestamp;
-	if(listenDurationMs > MIN_LISTEN_DURATION_MS) {
-		LED.startSpinFast();
-		await wait(100); // a little trailing audio seems to help accuracy
-		await execp("sudo killall -q arecord");
-		SFX.ok();
-	} else {
+	listenDurationMs = now() - listenStartTimestamp;
+	await wait(100); // a little trailing audio seems to help accuracy
+	await execp("sudo killall -q arecord");
+	if(listenDurationMs < MIN_LISTEN_DURATION_MS) {
 		LED.stopSpin();
+	} else {
+		LED.startSpinFast();
+		SFX.ok();
 	}
 }
 

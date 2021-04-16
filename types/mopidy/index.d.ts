@@ -22,9 +22,11 @@ declare module "mopidy" {
       resume:   () => Promise<void>,
     };
     tracklist: {
-      add:     (args: addArgs)  => Promise<void>,
-      clear:   ()               => Promise<void>,
-      shuffle: (args: number[]) => Promise<void>,
+      add:       (args: addArgs)  => Promise<void>,
+      clear:     ()               => Promise<void>,
+      shuffle:   (args: number[]) => Promise<void>,
+      getTracks: ()               => Promise<any>,
+      index:     ()               => Promise<any>,
     };
   }
 

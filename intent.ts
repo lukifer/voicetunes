@@ -44,8 +44,9 @@ export const artistTracksMapJson   = (): ArtistTracksMap   => readJson("./itunes
 export const playlistTracksMapJson = (): PlaylistTracksMap => readJson("./itunes/maps/playlistTracks.json");
 export const tracksMapJson         = (): TracksMap         => readJson("./itunes/maps/tracks.json");
 
-const ordinalToNum = readJson("./ordinalWords.json")
-	.reduce((acc: StringMap, x: StringTuple) => ({
+const ord = readJson("./itunes/ordinalWords.json");
+const ordinalToNum =
+	ord.reduce((acc: StringMap, x: StringTuple) => ({
 		...acc,
 		[x[1]]: parseInt(x[0]) - 1,
 	}), {} as StringMap);
@@ -89,7 +90,9 @@ export async function doIntent(msg: Message) {
 	//log(["intent msg", msg]);
 	if(!msg || !msg.intent || !msg.intent.name || !msg.slots) {
 		return err("no intent", msg);
+		SFX.unrecognized();
 	}
+	const { playback, tracklist } = mopidy;
 	const { intent, slots } = msg;
 	const { playaction, playlistaction } = slots;
 	const queue = playaction === "queue" || ["queue", "queue shuffle"].includes(playlistaction);
@@ -99,11 +102,11 @@ export async function doIntent(msg: Message) {
 			if(!slots?.artist || !artistMap[slots.artist]) {
 				return err("no artist", msg);
 			}
-			let tracks = artistTracksMap[slots.artist];
-			if(!tracks?.length) {
+			let artistTracks = artistTracksMap[slots.artist];
+			if(!artistTracks?.length) {
 				return err("no tracks", msg);
 			} else {
-				playTracks(tracks.map(x => x.file), { shuffle: true, queue });
+				playTracks(artistTracks.map(x => x.file), { shuffle: true, queue });
 			}
 			break;
 
@@ -176,6 +179,17 @@ export async function doIntent(msg: Message) {
 			}
 			break;
 
+		case "WhatIsPlaying":
+			const tracks = await tracklist.getTracks();
+			const i      = await tracklist.index();
+			const file = decodeURIComponent(tracks[i].replace(/^file:\/\//, ""));
+			const tags = "format_tags=artist,title,album";
+			const probe = await execp(
+				`ffprobe -show_entries ${tags} -of default=noprint_wrappers=1:nokey=1 ${file}`
+			);
+			console.log(probe.stdout);
+			break;
+
 		case "WhatIsTime":
 			const { stdout } = await execp([
 				`if [ $(date +%M) != "00" ]`,
@@ -195,19 +209,19 @@ export async function doIntent(msg: Message) {
 			break;
 
 		case "NextTrack":
-			await mopidy.playback.next();
+			await playback.next();
 			break;
 
 		case "PreviousTrack":
-			await mopidy.playback.previous();
+			await playback.previous();
 			break;
 
 		case "Resume":
-			mopidy.playback.resume();
+			playback.resume();
 			break;
 
 		case "Stop":
-			mopidy.playback.pause();
+			playback.pause();
 			break;
 
 		case "RestartMopidy":
@@ -224,6 +238,7 @@ export async function doIntent(msg: Message) {
 				exec("sudo reboot now");
 			} else {
 				SFX.error();
+				if(USE_LED) LED.flashErr();
 			}
 			break;
 
@@ -233,6 +248,7 @@ export async function doIntent(msg: Message) {
 				exec("sudo shutdown now");
 			} else {
 				SFX.error();
+				if(USE_LED) LED.flashErr();
 			}
 			break;
 
@@ -244,6 +260,7 @@ export async function doIntent(msg: Message) {
 			if(mqttClient && MQTT_PASSTHROUGH_INTENTS.includes(intent.name)) {
 				mqttClient.publish("voice2json", msg.toString());
 			} else {
+				if(USE_LED) LED.flashErr();
 				return err("command unrecognized", msg);
 			}
 	}
@@ -347,5 +364,6 @@ function log(msg: unknown) {
 
 function err(msg: string, also: unknown) {
 	console.log(`err: ${msg}`, also);
+	if(USE_LED) LED.flashErr();
 	SFX.error();
 }

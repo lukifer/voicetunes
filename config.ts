@@ -24,6 +24,7 @@ const configDefaults = {
 		KEY_LISTEN: "",
 	},
 	DENOISE_BIN: "",
+	DENOISE_SOX: false as boolean | number,
 	KEY_UP: 233,
 	KEY_DOWN: 234,
 	KEY_LEFT: 182,

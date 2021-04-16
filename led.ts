@@ -18,8 +18,9 @@ const led = new Gpio(5, 'out');
 export function open() { led.writeSync(1); }
 const LedDriver = new Apa102spi(12, 100);
 
-export const startSpinFast = () => startSpin(0.5 * LED_MS);
-export const startSpinSlow = () => startSpin(3.0 * LED_MS);
+export const startSpinFast   = () => startSpin(0.5 * LED_MS);
+export const startSpinFaster = () => startSpin(0.3 * LED_MS);
+export const startSpinSlow   = () => startSpin(3.0 * LED_MS);
 
 export function startSpin(speed = LED_MS) {
 	if(timer) clearInterval(timer)
@@ -53,6 +54,26 @@ export function stopSpin() {
 export function flair(speed = 40) {
 	startSpin(speed);
 	setTimeout(() => stopSpin(), speed*13);
+}
+
+export function flash(color: LedPixel, count: number, speed: number = 60) {
+	let iter = count * 2;
+	const fn = () => {
+		const on = iter % 2;
+		ledColors.map((_, n) => on
+			? LedDriver.setLedColor(n, 1, ...color)
+			: LedDriver.setLedColor(n, 0, 0, 0, 0)
+		);
+		LedDriver.sendLeds();
+		LedDriver.sendLeds();
+		iter--;
+		if(iter >= 0) setTimeout(fn, speed);
+	}
+	fn();
+}
+
+export function flashErr() {
+	flash([255, 0, 0], 3);
 }
 
 export function volumeChange(oldVol: number, newVol: number) {
