@@ -47,7 +47,7 @@ export const tracksMapJson         = (): TracksMap         => readJson("./itunes
 const ordinalToNum = readJson("./ordinalWords.json")
 	.reduce((acc: StringMap, x: StringTuple) => ({
 		...acc,
-		[x[1]]: parseInt(x[0])
+		[x[1]]: parseInt(x[0]) - 1,
 	}), {} as StringMap);
 
 const albumsMap         =         albumsMapJson();

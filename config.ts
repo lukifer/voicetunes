@@ -1,6 +1,6 @@
 import { readJson } from "./itunes/data";
 
-const config = {
+const configDefaults = {
 	ALLOW_SHUTDOWN: false,
 	AUDIO_DEVICE_IN: "ac108",
 	AUDIO_DEVICE_OUT: "dmixer",
@@ -39,8 +39,9 @@ const config = {
 	URL_MOPIDY: "ws://localhost:6680/mopidy/ws/",
 	URL_MUSIC: "file:///home/pi/music",
 	URL_ITUNES: "",
-	USE_LED: true,
+	USE_LED: false,
 	VOICE2JSON_BIN: "voice2json",
+	VOICE2JSON_PROFILE: "/home/pi/.config/voice2json",
 	WAV_BEEP: "",
 	WAV_ERROR: "",
 	WAV_OK: "",
@@ -48,4 +49,13 @@ const config = {
 };
 
 // To override defaults, create a config.local.json with matching keys
-export default Object.assign({}, config, readJson("./config.local.json")) as typeof config;
+const config = Object.assign(
+	{},
+	configDefaults,
+	readJson("./config.local.json")
+) as typeof configDefaults;
+
+export default {
+	...config,
+	"VOICE2JSON": `${config["VOICE2JSON_BIN"]} --profile ${config["VOICE2JSON_PROFILE"]}`
+};

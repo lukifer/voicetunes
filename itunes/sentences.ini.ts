@@ -27,6 +27,7 @@ artist = (${artistKeys.join(" | ")}){artist}
 [PlayArtistAlbumByNumber]
 albumnum = (${ordinalWordsJson.map((x: string[]) => x[1]).join(" | ")}){albumnum}
 <PlayTrack.playaction> [the] <albumnum> album [(of | by | from)] <PlayArtist.artist>
+<PlayTrack.playaction> [the] <albumnum> <PlayArtist.artist> album
 
 [PlayAlbum]
 <PlayTrack.playaction> [the] album <album>
