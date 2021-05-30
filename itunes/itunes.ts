@@ -36,14 +36,19 @@ import {
 } from "./types";
 
 import config from "../config";
-const { URL_ITUNES } = config;
+const {
+  EXCLUDE_GENRES,
+  FILTER_ARTISTS_BY_PLAYLISTS,
+  FILTER_TRACKS_BY_PLAYLISTS,
+  PATH_ITUNES,
+} = config;
 
 const artistsData   = artistsJson();
 const playlistsData = playlistsJson();
 const tracksData    = tracksJson();
 
 const home = process.env["HOME"];
-const iTunesPath = URL_ITUNES || `file://${home}/Music/iTunes/iTunes%20Media/Music/`;
+const iTunesPath = "file://" + (PATH_ITUNES || `${home}/Music/iTunes/iTunes%20Media/Music/`);
 
 // itunes-data appears to be bugged on exporting albums, so we collate this ourselves
 let albumsBuildMap: Record<ArtistAndAlbum, iTunesAlbum> = {};
@@ -82,9 +87,11 @@ function albumYear(album: iTunesAlbum) {
 
 const songFileRegex = /\.m(p3|4a)$/i;
 
-const fourStarArtistFilter: Record<Artist, boolean> =
+// Optional: only support playing by artist by artists in specific playlist(s)
+const playByArtistFilter: Record<Artist, boolean> | null =
+  FILTER_ARTISTS_BY_PLAYLISTS &&
   playlistsData
-    .filter(({ Name }) => ["Business", "Comedy"].includes(Name))
+    .filter(({ Name }) => FILTER_ARTISTS_BY_PLAYLISTS?.includes(Name))
     .reduce((acc, { Tracks }) => ([ ...acc, ...Tracks ]), [] as iTunesTrack[])
     .filter(track => !!track)
     .reduce((acc, track) => ({
@@ -93,10 +100,12 @@ const fourStarArtistFilter: Record<Artist, boolean> =
     }), {} as Record<Artist, boolean>)
     ;
 
-const fourStarTrackFilter: Record<iTunesTrack["Track ID"], boolean> =
+// Optional: only support playing by track name for tracks in specific playlist(s)
+const playTrackFilter: Record<iTunesTrack["Track ID"], boolean> | null =
+  FILTER_TRACKS_BY_PLAYLISTS &&
   playlistsData
-    .find(x => x.Name === "Business")
-    .Tracks
+    .filter(({ Name }) => FILTER_TRACKS_BY_PLAYLISTS?.includes(Name))
+    .reduce((acc, { Tracks }) => ([ ...acc, ...Tracks ]), [] as iTunesTrack[])
     .filter(track => !!track)
     .reduce((acc, { ["Track ID"]: TrackID }) => ({
       ...acc,
@@ -186,10 +195,11 @@ const tracksMap: TracksMap =
   tracksData
     .filter(filterTrack)
     .filter(({ Location }) => Location && songFileRegex.test(Location))
-    .filter(({ Genre }) => !["Skool", "Audiobook", "Audiobook (Off)"].includes(Genre))
+    .filter(({ Genre }) => !EXCLUDE_GENRES || !EXCLUDE_GENRES.includes(Genre))
+    .filter(({ Artist }) => !!Artist)
     .filter(track => {
       track.Album && track.Location && addTrackToAlbums(track);
-      return !!fourStarTrackFilter[track["Track ID"]];
+      return !playTrackFilter || !!playTrackFilter[track["Track ID"]];
     })
     .reduce((acc: TracksMap, track: iTunesTrack) => {
       const trackSentence  = scrubTrackName(track.Name);
@@ -197,17 +207,14 @@ const tracksMap: TracksMap =
       const trackByArtistSentence = `${trackSentence} by ${artistSentence}`;
       const processedTracks = processTracks([track]);
       if(trackSentence) {
-        return {
-          ...acc,
-          [trackSentence]: [
-            ...(acc[trackSentence] || []),
-            ...processedTracks,
-          ],
-          [trackByArtistSentence]: [
-            ...(acc[trackByArtistSentence] || []),
-            ...processedTracks,
-          ],
-        };
+        acc[trackSentence] = [
+          ...(acc[trackSentence] || []),
+          ...processedTracks,
+        ];
+        acc[trackByArtistSentence] = [
+          ...(acc[trackByArtistSentence] || []),
+          ...processedTracks,
+        ];
       }
       return acc;
     }, {} as TracksMap);
@@ -215,33 +222,30 @@ writeOut("tracks", tracksMap);
 
 const artistTracksMap: ArtistTracksMap = tracksData
   .filter(filterTrack)
-  .filter(track => fourStarTrackFilter[track["Track ID"]])
+  .filter(track => !playTrackFilter || playTrackFilter[track["Track ID"]])
   .filter(({ Location }) => Location && songFileRegex.test(Location))
-  .filter(({ Genre }) => !["Skool", "Audiobook", "Audiobook (Off)"].includes(Genre))
+  .filter(({ Genre }) => !EXCLUDE_GENRES || !EXCLUDE_GENRES.includes(Genre))
+  .filter(({ Artist }) => !!Artist)
   .reduce((acc: ArtistTracksMap, track: iTunesTrack): ArtistTracksMap => {
     const artistSentence = scrubArtistName(track.Artist);
-    return {
-      ...acc,
-      [artistSentence]: [
-        ...(acc[artistSentence] || []),
-        ...processTracks([track]),
-      ],
-    };
+    acc[artistSentence] = [
+      ...(acc[artistSentence] || []),
+      ...processTracks([track]),
+    ];
+    return acc;
   }, {} as ArtistTracksMap);
 writeOut("artistTracks", artistTracksMap);
 
 const artistAlbumsMap: ArtistAlbumsMap = Object.keys(albumsBuildMap)
   .reduce((acc: ArtistAlbumsMap, artistAlbumKey: ArtistAndAlbum): ArtistAlbumsMap => {
     const artist = artistAlbumKey.split(" | ")[1];
-    if(!fourStarArtistFilter[artist]) return acc;
+    if(playByArtistFilter && !playByArtistFilter[artist]) return acc;
     const artistSentence = scrubArtistName(artist);
-    return {
-      ...acc,
-      [artistSentence]: [
-        ...(acc[artistSentence] || []),
-        processAlbum(albumsBuildMap[artistAlbumKey])
-      ],
-    };
+    acc[artistSentence] = [
+      ...(acc[artistSentence] || []),
+      processAlbum(albumsBuildMap[artistAlbumKey])
+    ];
+    return acc;
   }, {} as ArtistAlbumsMap);
 const artistAlbumsMapSorted: ArtistAlbumsMap = Object.keys(artistAlbumsMap)
   .reduce((acc: ArtistAlbumsMap, artistAlbumKey: ArtistAndAlbum): ArtistAlbumsMap => ({
@@ -266,15 +270,14 @@ const albumsMap: AlbumsMap =
       const albumSentence  = scrubAlbumName(album.Name);
       const artistSentence = scrubArtistName(album.Artist);
       const albumByArtistSentence = `${albumSentence} by ${artistSentence}`;
-      if(!albumSentence) return acc;
-      const processedAlbum = processAlbum(album);
-      return {
-        ...acc,
-        [albumSentence]: [ ...(acc[albumSentence] || []), processedAlbum ],
-        ...(artistSentence === "compilation" ? {} : {
-          [albumByArtistSentence]: [ processedAlbum ],
-        })
-      };
+      if(albumSentence) {
+        const processedAlbum = processAlbum(album);
+        acc[albumSentence] = [ ...(acc[albumSentence] || []), processedAlbum ];
+        if(artistSentence !== "compilation") {
+          acc[albumByArtistSentence] = [ processedAlbum ];
+        }
+      }
+      return acc;
     }, {} as AlbumsMap);
 
 writeOut("albums", albumsMap);
@@ -285,7 +288,7 @@ writeOut("albums", albumsMap);
 const artistMap: ArtistMap =
   artistsData
     .filter(filterArtist)
-    .filter(({ Name }) => fourStarArtistFilter[Name])
+    .filter(({ Name }) => !playByArtistFilter || playByArtistFilter[Name])
     .reduce((acc: ArtistMap, artist: iTunesArtist) => {
       const artistSentence = scrubArtistName(artist.Name);
       return !artistSentence ? acc : { ...acc, [artistSentence]: artist.Name };

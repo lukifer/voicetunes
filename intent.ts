@@ -15,10 +15,10 @@ const execp = promisify(exec);
 
 const {
 	ALLOW_SHUTDOWN,
+	PATH_MUSIC,
 	MAX_QUEUED_TRACKS,
 	MQTT_IP,
 	MQTT_PASSTHROUGH_INTENTS,
-	URL_MUSIC,
 	USE_LED,
 } = config;
 
@@ -271,7 +271,7 @@ let loadingTimer: ReturnType<typeof setTimeout> | null = null;
 async function cueRemainingTracks(tracks: string[]) {
 	const { tracklist } = mopidy;
 	console.log("cueing "+tracks.length);
-	await tracklist.add({ uris: tracks.slice(0, 5).map(file => `${URL_MUSIC}/${file}`) });
+	await tracklist.add({ uris: tracks.slice(0, 5).map(file => `file://${PATH_MUSIC}/${file}`) });
 	if(tracks.length > 5) {
 		await wait(500);
 		await cueRemainingTracks(tracks.slice(5));
@@ -291,7 +291,7 @@ export async function playTracks(tracks: string[], opts: PlayOptions = {}) {
 	// cue a random track and start playing immediately
 	const start = shuffle ? rnd(tracks.length) : 0;
 	if(!queue) await tracklist.clear();
-	await tracklist.add({ "uris": [ `${URL_MUSIC}/${tracks[start]}` ] });
+	await tracklist.add({ "uris": [ `file://${PATH_MUSIC}/${tracks[start]}` ] });
 	if(!queue) await playback.play();
 
 	// then add the remainder asynchronously (shuffling if needed)

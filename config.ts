@@ -25,6 +25,9 @@ const configDefaults = {
 	},
 	DENOISE_BIN: "",
 	DENOISE_SOX: false as boolean | number,
+	EXCLUDE_GENRES: null,
+	FILTER_ARTISTS_BY_PLAYLISTS: null,
+	FILTER_TRACKS_BY_PLAYLISTS: null,
 	KEY_UP: 233,
 	KEY_DOWN: 234,
 	KEY_LEFT: 182,
@@ -36,10 +39,10 @@ const configDefaults = {
 	MIN_LISTEN_DURATION_MS: 1000,
 	MQTT_PASSTHROUGH_INTENTS: [],
 	MQTT_IP: "",
+	PATH_ITUNES: "",
+	PATH_MUSIC: "/home/pi/music",
 	PATH_RAMDISK: "/tmp/ramdisk",
 	URL_MOPIDY: "ws://localhost:6680/mopidy/ws/",
-	URL_MUSIC: "file:///home/pi/music",
-	URL_ITUNES: "",
 	USE_LED: false,
 	VOICE2JSON_BIN: "voice2json",
 	VOICE2JSON_PROFILE: "/home/pi/.config/voice2json",
@@ -53,7 +56,7 @@ const configDefaults = {
 const config = Object.assign(
 	{},
 	configDefaults,
-	readJson("./config.local.json")
+	readJson(`${__dirname}/config.local.json`)
 ) as typeof configDefaults;
 
 export default {
