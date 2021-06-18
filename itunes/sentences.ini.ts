@@ -21,6 +21,10 @@ track = (${trackKeys.join(" | ")}){track}
 artist = (${artistKeys.join(" | ")}){artist}
 <PlayTrack.playaction> [something] [(by | from)] [artist] <artist>
 
+[PlayArtistBest]
+<PlayTrack.playaction> [the] best of [artist] <PlayArtist.artist>
+<PlayTrack.playaction> something (great | awesome) [(by | from)] [artist] <PlayArtist.artist>
+
 [PlayRandomAlbumByArtist]
 <PlayTrack.playaction> [an] album [by] <PlayArtist.artist>
 

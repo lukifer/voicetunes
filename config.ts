@@ -4,6 +4,7 @@ const configDefaults = {
 	ALLOW_SHUTDOWN: false,
 	AUDIO_DEVICE_IN: "ac108",
 	AUDIO_DEVICE_OUT: "dmixer",
+	BEST_TRACKS_PLAYLIST: null,
 	BT_BUTTON_NAME: "Tunai Button",
 	BT_DEVICE_EVENT: "/dev/input/event0",
 	CLICK_DELAY_MS: 500,

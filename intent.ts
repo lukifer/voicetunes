@@ -15,10 +15,11 @@ const execp = promisify(exec);
 
 const {
 	ALLOW_SHUTDOWN,
-	PATH_MUSIC,
+	BEST_TRACKS_PLAYLIST,
 	MAX_QUEUED_TRACKS,
 	MQTT_IP,
 	MQTT_PASSTHROUGH_INTENTS,
+	PATH_MUSIC,
 	USE_LED,
 } = config;
 
@@ -98,6 +99,13 @@ export async function doIntent(msg: Message) {
 	const queue = playaction === "queue" || ["queue", "queue shuffle"].includes(playlistaction);
 
 	switch(intent.name) {
+		case "PlayArtistBest":
+			if(BEST_TRACKS_PLAYLIST) {
+				const playlistFiles = playlistTracksMap[BEST_TRACKS_PLAYLIST];
+				const bestTracks = playlistFiles.filter(({ artist }) => artist === slots.artist)
+				playTracks(bestTracks.map(({ file }) => file), { shuffle: true, queue });
+				break;
+			}
 		case "PlayArtist":
 			if(!slots?.artist || !artistMap[slots.artist]) {
 				return err("no artist", msg);
