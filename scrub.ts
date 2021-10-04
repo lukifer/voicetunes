@@ -7,26 +7,35 @@ import {
   AlbumSentence,
   TrackSentence,
   EntityFilterType,
+  EntityFilter,
+  iTunesSubstitutions,
 } from "./types";
+
+import config from "./config";
+const {
+  FILTER_DENY,
+  FILTER_ONLY,
+  SUBSTITUTIONS,
+} = config;
 
 declare global { interface String { replaceAll(tuples: StringReplaceTuple[]): string; } }
 String.prototype.replaceAll = function(tuples: StringReplaceTuple[]): string {
   return tuples.reduce((str, t) => str.replace(t[0], t[1]), this);
 };
 
-export const substitutionsJson = (): iTunesSubstitutions => readFilters("substitutions", {});
-export const filterDenyJson    = (): EntityFilter        => readFilters("filter_deny",   []);
-export const filterOnlyJson    = (): EntityFilter        => readFilters("filter_only",   []);
-
-export const substitutions = substitutionsJson();
-export const filterDeny = filterDenyJson();
-export const filterOnly = filterOnlyJson();
-
 const filterKeys = ["albums", "artists", "genres", "playlists", "tracks"];
 const readFilters = (filterType: string, empty: [] | {}) => {
-  const customFilters = { filter_deny, filter_only, substitutions };
+  const customFilters = {
+    filter_deny: FILTER_DENY,
+    filter_only: FILTER_ONLY,
+    substitutions: SUBSTITUTIONS,
+  };
   return filterKeys.reduce((acc, k) => ({ [k]: empty, ...acc }), customFilters[filterType]);
-};
+}
+
+export const substitutions: iTunesSubstitutions = readFilters("substitutions", {});
+export const filterDeny: EntityFilter           = readFilters("filter_deny",   []);
+export const filterOnly: EntityFilter           = readFilters("filter_only",   []);
 
 const wordSubstitutions: StringReplaceTuple[] = Object.keys(substitutions.words || {})
   .reduce((acc, word) => [

@@ -31,10 +31,12 @@
     "npm": "^6.14.6",
     "onoff": "^5.0.1",
     "plistlib": "^0.2.1",
+    "remove-accents": "^0.4.2",
     "rpi-gpio": "^2.1.5",
     "shuffle-array": "^1.0.1",
     "sqlite3": "^5.0.2",
     "ts-jest": "^26.1.2",
-    "typescript": "^3.9.6"
+    "typescript": "^3.9.6",
+    "written-number": "^0.11.1"
   }
 }
