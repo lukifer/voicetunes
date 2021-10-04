@@ -2,6 +2,48 @@ export type StringMap = Record<string, string>;
 export type StringTuple = [string, string];
 export type StringReplaceTuple = [string | RegExp, string];
 
+export type SqlPlaylist = {
+  name: string;
+  playlist_id: number;
+}
+
+export type SqlTrack = {
+  album_artist: string;
+  album: string;
+  artist: string;
+  compilation: boolean;
+  disc_number: number;
+  genre: string;
+  kind: string;
+  location: string;
+  name: string;
+  normalization: number;
+  rating: number;
+  track_count: number;
+  track_id: number;
+  year: number;
+}
+
+export type VoxSentence = {
+  sentence: string;
+}
+export type VoxAlbum = VoxSentence & {
+  album: string;
+  artist: string | null;
+}
+export type VoxArtist = VoxSentence & {
+  artist: string;
+}
+export type VoxGenre = VoxSentence & {
+  genre: string;
+}
+export type VoxPlaylist = VoxSentence & {
+  playlist_id: number;
+}
+export type VoxTrack = VoxSentence & {
+  track_id: number;
+}
+
 export interface iTunesAlbumTrack {
   Name:            string;
   Artist?:         string | null;
@@ -105,6 +147,7 @@ export interface iTunesSubstitutions {
   words?:      Record<string, string>;
   albums:      Record<string, string>;
   artists:     Record<string, string>;
+  genres:      Record<string, string>;
   playlists:   Record<string, string>;
   tracks:      Record<string, string>;
 }
@@ -114,6 +157,7 @@ export type ArtistAndAlbum = string;
 
 export type ArtistSentence   = string;
 export type AlbumSentence    = string;
+export type GenreSentence    = string;
 export type PlaylistSentence = string;
 export type TrackSentence    = string;
 
@@ -144,7 +188,7 @@ export type Album = {
 };
 
 export type iTunesEntity = iTunesAlbum | iTunesArtist | iTunesPlaylist | iTunesTrack;
-export type EntityFilterType = "albums" | "artists" | "playlists" | "tracks";
+export type EntityFilterType = "albums" | "artists" | "genres" | "playlists" | "tracks";
 export type EntityFilter = Required<Record<EntityFilterType, string[]>>
 
 export type OutputEntity = "albums"

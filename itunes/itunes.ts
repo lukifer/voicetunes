@@ -1,326 +1,198 @@
-import * as fs from "fs";
-
 import {
-  artistsJson,
-  playlistsJson,
-  tracksJson,
-} from "./data";
-import {
-  filterAlbum,
-  filterArtist,
-  filterPlaylist,
-  filterTrack,
+  filterAlbums,
+  filterArtists,
+  filterGenres,
+  filterPlaylists,
+  filterTracks,
   scrubAlbumName,
   scrubArtistName,
   scrubTrackName,
   substitutions,
 } from "./scrub";
+
 import {
-  iTunesArtist,
-  iTunesAlbum,
-  iTunesAlbumTrack,
-  iTunesPlaylist,
-  iTunesTrack,
-  Artist,
-  ArtistAndAlbum,
-  Album,
-  Track,
-  ArtistMap,
-  ArtistAlbumsMap,
-  ArtistTracksMap,
-  AlbumsMap,
-  PlaylistTracksMap,
-  TracksMap,
-  OutputEntity,
-  OutputMaps,
+  SqlPlaylist,
+  SqlTrack,
 } from "./types";
+
+import { dbConnect, dbExec, dbQuery } from "../utils";
 
 import config from "../config";
 const {
   EXCLUDE_GENRES,
-  FILTER_ARTISTS_BY_PLAYLISTS,
-  FILTER_TRACKS_BY_PLAYLISTS,
-  PATH_ITUNES,
+  FILE_EXTENSIONS,
+  PATH_DATABASE,
 } = config;
 
-const artistsData   = artistsJson();
-const playlistsData = playlistsJson();
-const tracksData    = tracksJson();
+const [db, knex] = dbConnect(PATH_DATABASE);
 
-const home = process.env["HOME"];
-const iTunesPath = "file://" + (PATH_ITUNES || `${home}/Music/iTunes/iTunes%20Media/Music/`);
+const fileExtensionWhere = FILE_EXTENSIONS.map(ext => `location LIKE "%${ext}"`).join(" OR ")
 
-// itunes-data appears to be bugged on exporting albums, so we collate this ourselves
-let albumsBuildMap: Record<ArtistAndAlbum, iTunesAlbum> = {};
-
-function albumTrackSort(a: iTunesAlbumTrack, b: iTunesAlbumTrack) {
-  const { ["Disc Number"]: aDisc, ["Track Number"]: aNumber } = a;
-  const { ["Disc Number"]: bDisc, ["Track Number"]: bNumber } = b;
-
-  return (aDisc && bDisc && aDisc !== bDisc)
-    ? aDisc   > bDisc   ? 1 : -1
-    : aNumber > bNumber ? 1 : -1
-    ;
-}
-
-function chronologicalAlbumSort(a: Album, b: Album) {
-  return (a.year && b.year && a.year !== b.year)
-    ? a.year > b.year ? 1 : -1
-    : a.name.localeCompare(b.name)
-    ;
-}
-
-function albumYear(album: iTunesAlbum) {
-  const yearCount = album.Tracks
-    .reduce((acc, t) => t.Year ? {
-      ...acc,
-      [t.Year]: (acc[t.Year] || 0) + 1,
-    } : acc, {})
-  const yearModeTuple = Object.keys(yearCount)
-    .reduce((yearTuple, year) => (
-      yearCount[year] > yearTuple[0]
-        ? [yearCount[year], year]
-        : yearTuple
-    ), [0, null]);
-  return yearModeTuple[1];
-}
-
-const songFileRegex = /\.m(p3|4a)$/i;
-
-// Optional: only support playing by artist by artists in specific playlist(s)
-const playByArtistFilter: Record<Artist, boolean> | null =
-  FILTER_ARTISTS_BY_PLAYLISTS &&
-  playlistsData
-    .filter(({ Name }) => FILTER_ARTISTS_BY_PLAYLISTS?.includes(Name))
-    .reduce((acc, { Tracks }) => ([ ...acc, ...Tracks ]), [] as iTunesTrack[])
-    .filter(track => !!track)
-    .reduce((acc, track) => ({
-      ...acc,
-      [track["Album Artist"] || track.Artist]: true
-    }), {} as Record<Artist, boolean>)
-    ;
-
-// Optional: only support playing by track name for tracks in specific playlist(s)
-const playTrackFilter: Record<iTunesTrack["Track ID"], boolean> | null =
-  FILTER_TRACKS_BY_PLAYLISTS &&
-  playlistsData
-    .filter(({ Name }) => FILTER_TRACKS_BY_PLAYLISTS?.includes(Name))
-    .reduce((acc, { Tracks }) => ([ ...acc, ...Tracks ]), [] as iTunesTrack[])
-    .filter(track => !!track)
-    .reduce((acc, { ["Track ID"]: TrackID }) => ({
-      ...acc,
-      [TrackID]: true,
-    }), {} as Record<iTunesTrack["Track ID"], boolean>)
-    ;
-
-function albumArtistOfTrack(track: iTunesTrack): Artist {
-  return /\/Compilations\//.test(track.Location)
-    ? "Compilation"
-    : track["Album Artist"] || track.Artist
-}
-
-function albumLocationOfTrack(track: iTunesTrack) {
-  return track.Location.replace(iTunesPath, "").replace(/\/[^/]+\.m(p3|4a)$/i, "")
-}
-
-function writeOut(entity: OutputEntity, map: OutputMaps) {
-  fs.writeFileSync(`maps/${entity}.json`, JSON.stringify(map, null, "\t"));
-  process.stdout.write(`${Object.keys(map).length} ${entity} written\n`);
-}
-
-function processTracks(tracks: iTunesAlbumTrack[]): Track[] {
-  return tracks.map((track: iTunesAlbumTrack) => {
-    if(!track || !track.Name) {
-      // console.log(`Missing track #${n}`, track);
-      return null;
-    }
-    if(!track.Location) {
-      // console.log("Missing track location!", track);
-      return null;
-    }
-    return {
-      name:        track.Name,
-      artist:      track.Artist,
-      album:       track.Album,
-      albumArtist: track["Album Artist"],
-      number:      track["Track Number"],
-      disc:        track["Disc Number"] || 1,
-      file:        track.Location.replace(iTunesPath, ""),
-      year:        track.Year,
-    };
-  }).filter(track => track && songFileRegex.test(track.file));
-}
-
-function processAlbum(album: iTunesAlbum): Album {
-  if(!album.Location) {
-    //console.log(`Missing album location`, album);
-    return null;
-  }
-  return {
-    name:   album.Name,
-    artist: album.Artist,
-    path:   album.Location.replace(iTunesPath, ""),
-    year:   albumYear(album),
-    tracks: processTracks(album.Tracks.sort(albumTrackSort)),
+async function resetTables() {
+  const voxTables = {
+    "vox_albums": {
+      "sentence": "text",
+      "album": "text",
+      "artist": "text",
+    },
+    "vox_artists": {
+      "sentence": "text",
+      "artist": "text",
+    },
+    "vox_genres": {
+      "sentence": "text",
+      "genre": "text",
+    },
+    "vox_playlists": {
+      "sentence": "text",
+      "playlist_id": "integer",
+    },
+    "vox_tracks": {
+      "sentence": "text",
+      "track_id": "integer",
+    },
   };
-}
-
-function addTrackToAlbums(track: iTunesTrack) {
-  const albumArtist = albumArtistOfTrack(track);
-  const albumKey = `${track.Album} | ${albumArtist}` as ArtistAndAlbum;
-  if(!albumsBuildMap[albumKey]) {
-    albumsBuildMap[albumKey] = {
-      Name:   track.Album,
-      Artist: albumArtist,
-      Location: albumLocationOfTrack(track),
-      Tracks: [],
-    } as iTunesAlbum;
+  const foreignKeys = {
+    "vox_playlists": ["playlist_id", "playlists"],
+    "vox_tracks": ["track_id", "tracks"],
   }
-  albumsBuildMap[albumKey].Tracks.push({
-    Name:           track.Name,
-    Artist:         track.Artist,
-    Album:          track.Album,
-    "Album Artist": track["Album Artist"],
-    "Track Number": track["Track Number"],
-    "Disc Number":  track["Disc Number"] || 1,
-    Location:       track.Location.replace(iTunesPath, ""),
-    Year:           track.Year,
-  } as iTunesAlbumTrack);
+  Object.entries(voxTables).forEach(async ([table, fields]) => {
+    await dbExec(`DROP TABLE IF EXISTS "${table}"`);
+    const fieldsStr = Object.entries(fields).map(([name, type]) => `"${name}" ${type}`).join(", ");
+    let createSql = `CREATE TABLE "${table}" ('id' integer, ${fieldsStr}, PRIMARY KEY (id)`;
+    if (foreignKeys[table]) {
+      const [foreignKey, foreignTable] = foreignKeys[table];
+      createSql += `, FOREIGN KEY(${foreignKey}) REFERENCES ${foreignTable}(${foreignKey})`;
+    }
+    createSql += ')';
+    await dbExec(createSql)
+  });
 }
 
+async function doAlbums() {
+  const albumsSql = `
+    SELECT artist, album, compilation, year, MAX(rating) as max_rating, iif(album_artist IS NOT NULL OR compilation = 1, album_artist, artist) as derived_artist
+    FROM tracks
+    WHERE album IS NOT NULL
+    AND track_number IS NOT NULL
+    AND (${fileExtensionWhere})
+    GROUP BY album, derived_artist
+    HAVING max_rating >= 80
+  `;
+  const albums = await dbQuery(albumsSql) as SqlTrack[] || [];
+  albums.filter(({album}) => filterAlbums(album)).forEach(async (album) => {
+    const albumSentence  = scrubAlbumName(album.album);
+    if(!albumSentence) return;
+    const newRows = [{
+      sentence: albumSentence,
+      album: album.album,
+      artist: null,
+    }];
+    if (!album.compilation && (album.album_artist || album.artist)) {
+      const artistSentence = scrubArtistName(album.album_artist || album.artist);
+      newRows.push({
+        sentence: `${albumSentence} by ${artistSentence}`,
+        album: album.album,
+        artist: album.album_artist || album.artist,
+      });
+    }
+    newRows.forEach(async (newRow) =>
+      await dbExec(knex('vox_albums').insert(newRow).toString())
+    );
+  });
+}
 
-// TRACKS
+async function doArtists() {
+  const artistSql = `
+    SELECT artist
+    FROM tracks
+    WHERE (${fileExtensionWhere})
+    GROUP by artist
+    HAVING rating >= 80
+  `;
+  const artistsRows = await dbQuery(artistSql);
+  const artistNames = (artistsRows as SqlTrack[]).map(x => x.artist)
 
-const tracksMap: TracksMap =
-  tracksData
-    .filter(filterTrack)
-    .filter(({ Location }) => Location && songFileRegex.test(Location))
-    .filter(({ Genre }) => !EXCLUDE_GENRES || !EXCLUDE_GENRES.includes(Genre))
-    .filter(({ Artist }) => !!Artist)
-    .filter(track => {
-      track.Album && track.Location && addTrackToAlbums(track);
-      return !playTrackFilter || !!playTrackFilter[track["Track ID"]];
-    })
-    .reduce((acc: TracksMap, track: iTunesTrack) => {
-      const trackSentence  = scrubTrackName(track.Name);
-      const artistSentence = scrubArtistName(track.Artist);
-      const trackByArtistSentence = `${trackSentence} by ${artistSentence}`;
-      const processedTracks = processTracks([track]);
-      if(trackSentence) {
-        acc[trackSentence] = [
-          ...(acc[trackSentence] || []),
-          ...processedTracks,
-        ];
-        acc[trackByArtistSentence] = [
-          ...(acc[trackByArtistSentence] || []),
-          ...processedTracks,
-        ];
-      }
-      return acc;
-    }, {} as TracksMap);
-writeOut("tracks", tracksMap);
-
-const artistTracksMap: ArtistTracksMap = tracksData
-  .filter(filterTrack)
-  .filter(track => !playTrackFilter || playTrackFilter[track["Track ID"]])
-  .filter(({ Location }) => Location && songFileRegex.test(Location))
-  .filter(({ Genre }) => !EXCLUDE_GENRES || !EXCLUDE_GENRES.includes(Genre))
-  .filter(({ Artist }) => !!Artist)
-  .reduce((acc: ArtistTracksMap, track: iTunesTrack): ArtistTracksMap => {
-    const artistSentence = scrubArtistName(track.Artist);
-    acc[artistSentence] = [
-      ...(acc[artistSentence] || []),
-      ...processTracks([track]),
-    ];
-    return acc;
-  }, {} as ArtistTracksMap);
-writeOut("artistTracks", artistTracksMap);
-
-const artistAlbumsMap: ArtistAlbumsMap = Object.keys(albumsBuildMap)
-  .reduce((acc: ArtistAlbumsMap, artistAlbumKey: ArtistAndAlbum): ArtistAlbumsMap => {
-    const artist = artistAlbumKey.split(" | ")[1];
-    if(playByArtistFilter && !playByArtistFilter[artist]) return acc;
+  artistNames.filter(filterArtists).forEach(async (artist: string) => {
     const artistSentence = scrubArtistName(artist);
-    acc[artistSentence] = [
-      ...(acc[artistSentence] || []),
-      processAlbum(albumsBuildMap[artistAlbumKey])
-    ];
-    return acc;
-  }, {} as ArtistAlbumsMap);
-const artistAlbumsMapSorted: ArtistAlbumsMap = Object.keys(artistAlbumsMap)
-  .reduce((acc: ArtistAlbumsMap, artistAlbumKey: ArtistAndAlbum): ArtistAlbumsMap => ({
-    ...acc,
-    [artistAlbumKey]: artistAlbumsMap[artistAlbumKey].sort(chronologicalAlbumSort),
-  }), {} as ArtistAlbumsMap);
-writeOut("artistAlbums", artistAlbumsMapSorted);
+    await dbExec(knex('vox_artists').insert({
+      sentence: artistSentence,
+      artist,
+    }).toString())
+  });
+}
 
-const albumsData = Object.values(albumsBuildMap).map((album: iTunesAlbum) => ({
-  ...album,
-  Tracks: album.Tracks.sort(albumTrackSort)
-}));
-fs.writeFileSync(`data/albums.json`, JSON.stringify(albumsData, null, "\t"));
+async function doGenres() {
+  const genresSql = `
+    SELECT genre
+    FROM tracks
+    WHERE genre IS NOT NULL
+    AND (${fileExtensionWhere})
+    GROUP BY genre
+  `;
+  const genres = await dbQuery(genresSql) as SqlTrack[] || [];
+  genres.filter(({genre}) => filterGenres(genre)).forEach(async ({genre}) => {
+    // const genreSentence = (substitutions.genres[genre] || genre).toLowerCase();
+    const genreSentence = genre.toLowerCase();
+    const newRow = {
+      sentence: genreSentence,
+      genre,
+    }
+    await dbExec(knex('vox_genres').insert(newRow).toString());
+  });
+}
 
+async function doPlaylists() {
+  const playlistsSql = `
+    SELECT name, playlist_id
+    FROM playlists
+    WHERE master IS NULL
+    AND distinguished_kind IS NULL
+    AND folder IS NULL
+  `;
+  const playlists = await dbQuery(playlistsSql) as SqlPlaylist[] || [];
+  playlists.filter(({name}) => filterPlaylists(name)).forEach(async ({name, playlist_id}) => {
+    const playlistSentence = (substitutions.playlists[name] || name).toLowerCase();
+    const newRow = {
+      sentence: playlistSentence,
+      playlist_id,
+    }
+    await dbExec(knex('vox_playlists').insert(newRow).toString());
+  });
+}
 
-// ALBUMS
+async function doTracks() {
+  const tracksSql = `
+    SELECT artist, name, track_id
+    FROM tracks
+    WHERE rating >= 80
+    AND (${fileExtensionWhere})
+    AND genre NOT IN ("${EXCLUDE_GENRES.join('","')}")
+  `;
+  const tracks = await dbQuery(tracksSql) as SqlTrack[] || [];
+  tracks.filter(({name}) => filterTracks(name)).forEach(async ({artist, name, track_id}) => {
+    const trackSentence = scrubTrackName(name);
+    const trackByArtistSentence = `${trackSentence} by ${scrubArtistName(artist)}`;
+    [
+      { sentence: trackSentence },
+      { sentence: trackByArtistSentence },
+    ].forEach(async (newRow) => {
+      await dbExec(knex('vox_tracks').insert({
+        ...newRow,
+        track_id,
+      }).toString());
+    })
+  });
+}
 
-const albumsMap: AlbumsMap =
-  albumsData
-    .filter(filterAlbum)
-    .reduce((acc: AlbumsMap, album: iTunesAlbum): AlbumsMap => {
-      const albumSentence  = scrubAlbumName(album.Name);
-      const artistSentence = scrubArtistName(album.Artist);
-      const albumByArtistSentence = `${albumSentence} by ${artistSentence}`;
-      if(albumSentence) {
-        const processedAlbum = processAlbum(album);
-        acc[albumSentence] = [ ...(acc[albumSentence] || []), processedAlbum ];
-        if(artistSentence !== "compilation") {
-          acc[albumByArtistSentence] = [ processedAlbum ];
-        }
-      }
-      return acc;
-    }, {} as AlbumsMap);
+async function go() {
+  await resetTables();
+  await doAlbums();
+  await doArtists();
+  await doGenres();
+  await doPlaylists();
+  await doTracks();
+  db.close()
+}
 
-writeOut("albums", albumsMap);
-
-
-// ARTISTS
-
-const artistMap: ArtistMap =
-  artistsData
-    .filter(filterArtist)
-    .filter(({ Name }) => !playByArtistFilter || playByArtistFilter[Name])
-    .reduce((acc: ArtistMap, artist: iTunesArtist) => {
-      const artistSentence = scrubArtistName(artist.Name);
-      return !artistSentence ? acc : { ...acc, [artistSentence]: artist.Name };
-    }, {} as ArtistMap);
-
-writeOut("artist", artistMap);
-
-
-// PLAYLISTS
-
-// let debugLast: iTunesTrack | undefined;
-
-const playlistsTracksMap: PlaylistTracksMap =
-  playlistsData
-    .filter(filterPlaylist)
-    .reduce((acc: PlaylistTracksMap, playlist: iTunesPlaylist) => {
-      const name = playlist.Name;
-      const playlistSentence = (substitutions.playlists[name] || name).toLowerCase();
-      const playlistTracks = playlist.Tracks.map((track: iTunesTrack) => {
-        // if(!track || !track.Name) {
-        //   console.log(`Missing track in ${name}, after:`, debugLast);
-        // }
-        // debugLast = track;
-        if(!track?.Name || !track?.Location) return null;
-        return {
-          name:   track.Name,
-          artist: track.Artist,
-          album:  track.Album,
-          file:   track.Location.replace(iTunesPath, ""),
-        };
-      }).filter(track => track && songFileRegex.test(track.file));
-      return { ...acc, [playlistSentence]: playlistTracks }
-    }, {} as PlaylistTracksMap);
-
-writeOut("playlistTracks", playlistsTracksMap);
+go();

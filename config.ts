@@ -1,4 +1,4 @@
-import { readJson } from "./itunes/data";
+import { readJson } from "./utils";
 
 const configDefaults = {
   ALLOW_SHUTDOWN: false,
@@ -27,7 +27,22 @@ const configDefaults = {
   DENOISE_BIN: "",
   DENOISE_SOX: false as boolean | number,
   EXCLUDE_GENRES: null,
+  FILE_EXTENSIONS: ['mp3', 'm4a'],
   FILTER_ARTISTS_BY_PLAYLISTS: null,
+  FILTER_DENY: {
+    albums: [],
+    artists: [],
+    genres: [],
+    playlists: [],
+    tracks: [],
+  },
+  FILTER_ONLY: {
+    albums: [],
+    artists: [],
+    genres: [],
+    playlists: [],
+    tracks: [],
+  },
   FILTER_TRACKS_BY_PLAYLISTS: null,
   KEY_UP: 233,
   KEY_DOWN: 234,
@@ -41,8 +56,16 @@ const configDefaults = {
   MQTT_PASSTHROUGH_INTENTS: [],
   MQTT_IP: "",
   PATH_ITUNES: "",
+  PATH_DATABASE: "./itunes.sqlite3",
   PATH_MUSIC: "/home/pi/music",
   PATH_RAMDISK: "/tmp/ramdisk",
+  SUBSTITUTIONS: {
+    albums: {},
+    artists: {},
+    genres: {},
+    playlists: {},
+    tracks: {},
+  },
   URL_MOPIDY: "ws://localhost:6680/mopidy/ws/",
   USE_LED: false,
   VOICE2JSON_BIN: "voice2json",

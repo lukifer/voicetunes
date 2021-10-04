@@ -1,16 +1,31 @@
 import * as fs from "fs";
 
-import { readJson } from "./data";
-const jsonKeys = (str: string) => Object.keys(readJson(`./maps/${str}.json`));
+import {
+  EntityFilterType,
+  VoxSentence,
+} from "./types";
+
+import config from "../config";
+const { PATH_DATABASE } = config;
+
+import { dbConnect, dbQuery, readJson } from "../utils";
 
 const ordinalWordsJson = readJson("./ordinalWords.json");
 
-const albumKeys    = jsonKeys("albums");
-const artistKeys   = jsonKeys("artist");
-const trackKeys    = jsonKeys("tracks");
-const playlistKeys = jsonKeys("playlistTracks");
+dbConnect(PATH_DATABASE);
 
-const sentences_ini = `
+async function get(which: EntityFilterType) {
+  const sentences = await dbQuery(`SELECT sentence FROM vox_${which}`) as VoxSentence[] || []
+  return sentences.map(({sentence}) => sentence);
+}
+
+async function go() {
+  const albumKeys    = await get("albums");
+  const artistKeys   = await get("artists");
+  const playlistKeys = await get("playlists");
+  const trackKeys    = await get("tracks");
+
+  const sentences_ini = `
 
 [PlayTrack]
 playaction = (play | queue){playaction}
@@ -97,6 +112,9 @@ restart music player
 nevermind
 never mind
 do nothing
-`;
+  `;
 
-fs.writeFileSync("sentences.ini", sentences_ini);
+  fs.writeFileSync("sentences.ini", sentences_ini);
+}
+
+go();

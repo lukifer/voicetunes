@@ -12,11 +12,16 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/argparse": "^2.0.10",
     "@types/jest": "^26.0.4",
+    "@types/moment": "^2.13.0",
     "@types/node-hid": "^1.2.0",
     "@types/shuffle-array": "^1.0.0",
+    "@types/sqlite3": "^3.1.7",
     "apa102-spi": "0.0.6",
+    "argparse": "^2.0.1",
     "jest": "^26.1.0",
+    "knex": "^0.95.11",
     "mic": "^2.1.2",
     "minimist": "^1.2.3",
     "mopidy": "^1.0.1",
@@ -25,8 +30,10 @@
     "nodemon": "^2.0.4",
     "npm": "^6.14.6",
     "onoff": "^5.0.1",
+    "plistlib": "^0.2.1",
     "rpi-gpio": "^2.1.5",
     "shuffle-array": "^1.0.1",
+    "sqlite3": "^5.0.2",
     "ts-jest": "^26.1.2",
     "typescript": "^3.9.6"
   }

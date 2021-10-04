@@ -1,17 +1,12 @@
 import removeAccents from "remove-accents";
 import writtenNumber from "written-number";
+import {readJson} from "../utils";
 import {
-  readJson,
   filterDenyJson,
   filterOnlyJson,
   substitutionsJson,
 } from "./data";
 import {
-  iTunesAlbum,
-  iTunesArtist,
-  iTunesPlaylist,
-  iTunesTrack,
-  iTunesEntity,
   StringReplaceTuple,
   ArtistSentence,
   AlbumSentence,
@@ -98,14 +93,15 @@ export function scrubAlbumName(albumName: string): AlbumSentence {
 const filterDeny = filterDenyJson();
 const filterOnly = filterOnlyJson();
 
-export const entityFilter = (entity: iTunesEntity, entityType: EntityFilterType) => {
-  const { Name } = entity;
+export const entityFilter = (entity: string, entityType: EntityFilterType) => {
+  if (!entity) return false;
   return (filterOnly[entityType].length)
-       ?  filterOnly[entityType].includes(Name)
-       : !filterDeny[entityType].includes(Name);
+       ?  filterOnly[entityType].includes(entity)
+       : !filterDeny[entityType].includes(entity);
 };
 
-export const filterAlbum    = (album:    iTunesAlbum)    => entityFilter(album,    "albums");
-export const filterArtist   = (artist:   iTunesArtist)   => entityFilter(artist,   "artists");
-export const filterPlaylist = (playlist: iTunesPlaylist) => entityFilter(playlist, "playlists");
-export const filterTrack    = (track:    iTunesTrack)    => entityFilter(track,    "tracks");
+export const filterAlbums    = (str: string) => entityFilter(str, "albums");
+export const filterArtists   = (str: string) => entityFilter(str, "artists");
+export const filterGenres    = (str: string) => entityFilter(str, "genres");
+export const filterPlaylists = (str: string) => entityFilter(str, "playlists");
+export const filterTracks    = (str: string) => entityFilter(str, "tracks");
