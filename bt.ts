@@ -1,5 +1,4 @@
 import HID from "node-hid";
-import { Message } from "./itunes/types";
 import { doIntent, textToIntent } from "./intent";
 
 import config from "./config";

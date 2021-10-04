@@ -15,9 +15,9 @@ import {
   SqlTrack,
 } from "./types";
 
-import { dbConnect, dbExec, dbQuery } from "../utils";
+import { dbConnect, dbExec, dbQuery } from "./utils";
 
-import config from "../config";
+import config from "./config";
 const {
   EXCLUDE_GENRES,
   FILE_EXTENSIONS,

@@ -5,12 +5,12 @@ import {
   VoxSentence,
 } from "./types";
 
-import config from "../config";
+import config from "./config";
 const { PATH_DATABASE } = config;
 
-import { dbConnect, dbQuery, readJson } from "../utils";
+import { dbConnect, dbQuery, readJson } from "./utils";
 
-const ordinalWordsJson = readJson("./ordinalWords.json");
+const ordinalWordsJson = readJson("./data/ordinalWords.json");
 
 dbConnect(PATH_DATABASE);
 
@@ -114,7 +114,7 @@ never mind
 do nothing
   `;
 
-  fs.writeFileSync("sentences.ini", sentences_ini);
+  fs.writeFileSync("data/sentences.ini", sentences_ini);
 }
 
 go();

@@ -3,13 +3,18 @@ import { exec, spawn } from "child_process";
 import { promisify }   from "util";
 import { connect }     from "mqtt";
 
-import config                            from "./config";
-import { mopidy }                        from "./index";
-import { readJson }                      from "./itunes/data";
-import * as LED                          from "./led";
-import SFX                               from "./sfx";
-import { train }                         from "./train";
-import { arrayWrap, between, rnd, wait } from "./utils";
+import config     from "./config";
+import { mopidy } from "./index";
+import * as LED   from "./led";
+import SFX        from "./sfx";
+import { train }  from "./train";
+import {
+  arrayWrap,
+  between,
+  readJson,
+  rnd,
+  wait,
+} from "./utils";
 
 const execp = promisify(exec);
 
@@ -34,7 +39,7 @@ import {
   Message,
   StringMap,
   StringTuple,
-} from "./itunes/types";
+} from "./types";
 
 const mqttClient = MQTT_IP && connect(`mqtt://${MQTT_IP}`);
 

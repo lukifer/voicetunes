@@ -3,7 +3,7 @@ import { Gpio }  from "onoff";
 
 import config           from "./config";
 import { between, rnd } from "./utils";
-import { LedPixel }     from "./itunes/types";
+import { LedPixel }     from "./types";
 
 const { LED_MS } = config;
 const rndColor = (base: number, change: number) => between(100, base - change + rnd(change*2), 255);

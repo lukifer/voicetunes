@@ -1,11 +1,6 @@
 import removeAccents from "remove-accents";
 import writtenNumber from "written-number";
-import {readJson} from "../utils";
-import {
-  filterDenyJson,
-  filterOnlyJson,
-  substitutionsJson,
-} from "./data";
+import {readJson} from "./utils";
 import {
   StringReplaceTuple,
   ArtistSentence,
@@ -19,23 +14,35 @@ String.prototype.replaceAll = function(tuples: StringReplaceTuple[]): string {
   return tuples.reduce((str, t) => str.replace(t[0], t[1]), this);
 };
 
-const ordinalWordsJson = readJson("./ordinalWords.json");
-const ordinalWords = ordinalWordsJson.reverse() as StringReplaceTuple[];
-
-const romanNumerals = readJson("./romanNumerals.json");
-const romanNumeralsRegex: StringReplaceTuple[] = romanNumerals.map((x: StringReplaceTuple) => (
-  [ new RegExp(x[0]), x[1] ])
-);
+export const substitutionsJson = (): iTunesSubstitutions => readFilters("substitutions", {});
+export const filterDenyJson    = (): EntityFilter        => readFilters("filter_deny",   []);
+export const filterOnlyJson    = (): EntityFilter        => readFilters("filter_only",   []);
 
 export const substitutions = substitutionsJson();
+export const filterDeny = filterDenyJson();
+export const filterOnly = filterOnlyJson();
 
-const numberWords = (x: string) => ` ${writtenNumber(parseInt(x), {noAnd: true}).replace(/-/g, " ")} `;
+const filterKeys = ["albums", "artists", "genres", "playlists", "tracks"];
+const readFilters = (filterType: string, empty: [] | {}) => {
+  const customFilters = { filter_deny, filter_only, substitutions };
+  return filterKeys.reduce((acc, k) => ({ [k]: empty, ...acc }), customFilters[filterType]);
+};
 
 const wordSubstitutions: StringReplaceTuple[] = Object.keys(substitutions.words || {})
   .reduce((acc, word) => [
     ...acc,
     [new RegExp(`\\b${word}\\b`, "g"), substitutions.words[word]]
   ], [] as StringReplaceTuple[]);
+
+const ordinalWordsJson = readJson("./data/ordinalWords.json");
+const ordinalWords = ordinalWordsJson.reverse() as StringReplaceTuple[];
+
+const romanNumerals = readJson("./data/romanNumerals.json");
+const romanNumeralsRegex: StringReplaceTuple[] = romanNumerals.map((x: StringReplaceTuple) => (
+  [ new RegExp(x[0]), x[1] ])
+);
+
+const numberWords = (x: string) => ` ${writtenNumber(parseInt(x), {noAnd: true}).replace(/-/g, " ")} `;
 
 export function scrub(str: string) {
   return removeAccents(str.toLowerCase())
@@ -89,9 +96,6 @@ export function scrubAlbumName(albumName: string): AlbumSentence {
     .replace(/\s+/g, " ")
     .trim()
 }
-
-const filterDeny = filterDenyJson();
-const filterOnly = filterOnlyJson();
 
 export const entityFilter = (entity: string, entityType: EntityFilterType) => {
   if (!entity) return false;
