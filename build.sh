@@ -20,13 +20,6 @@ do
     scp data/sounds_like.txt "$url":~/.config/voice2json/sounds_like.txt
     ssh "$url" 'cd ~/.config/voice2json/ && cat sentences.base.ini sentences.music.ini > sentences.ini'
 
-    scp maps/albums.json            "$ssh"/itunes/maps/albums.json
-    scp maps/artist.json            "$ssh"/itunes/maps/artist.json
-    scp maps/artistAlbums.json      "$ssh"/itunes/maps/artistAlbums.json
-    scp maps/artistTracks.json      "$ssh"/itunes/maps/artistTracks.json
-    scp maps/playlistTracks.json    "$ssh"/itunes/maps/playlistTracks.json
-    scp maps/tracks.json            "$ssh"/itunes/maps/tracks.json
-
     # FIXME: figure out how to add this PATH remotely on MacOS's SSH environment
     ssh "$url" 'export PATH=/usr/local/bin:$PATH; voice2json train-profile'
 done
