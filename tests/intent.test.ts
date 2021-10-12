@@ -28,7 +28,7 @@ test('queues a track', async () => {
   expect(mopidy.playback.play).not.toHaveBeenCalled();
 });
 
-test("parses a 'play by arist' intent", async () => {
+test("parses a 'play by artist' intent", async () => {
   const mopidy = mopidyFactory();
   await doIntent({
     intent: {name: "PlayArtist"},

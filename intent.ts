@@ -11,6 +11,8 @@ import { train }  from "./train";
 import {
   arrayWrap,
   between,
+  dbConnect,
+  dbQuery,
   readJson,
   rnd,
   wait,
@@ -18,51 +20,36 @@ import {
 
 const execp = promisify(exec);
 
-const {
-  ALLOW_SHUTDOWN,
-  BEST_TRACKS_PLAYLIST,
-  MAX_QUEUED_TRACKS,
-  MQTT_IP,
-  MQTT_PASSTHROUGH_INTENTS,
-  PATH_MUSIC,
-  USE_LED,
-} = config;
-
 import {
-  ArtistMap,
-  ArtistAlbumsMap,
-  ArtistTracksMap,
-  AlbumsMap,
   PlayOptions,
-  PlaylistTracksMap,
-  TracksMap,
   Message,
+  SqlTrack,
   StringMap,
   StringTuple,
 } from "./types";
 
+const {
+  ALLOW_SHUTDOWN,
+  MAX_QUEUED_TRACKS,
+  MQTT_IP,
+  MQTT_PASSTHROUGH_INTENTS,
+  PATH_DATABASE,
+  PATH_MUSIC,
+  USE_LED,
+} = config;
+
+dbConnect(PATH_DATABASE);
+
 const mqttClient = MQTT_IP && connect(`mqtt://${MQTT_IP}`);
 
-export const albumsMapJson         = (): AlbumsMap         => readJson("./itunes/maps/albums.json");
-export const artistMapJson         = (): ArtistMap         => readJson("./itunes/maps/artist.json");
-export const artistAlbumsMapJson   = (): ArtistAlbumsMap   => readJson("./itunes/maps/artistAlbums.json");
-export const artistTracksMapJson   = (): ArtistTracksMap   => readJson("./itunes/maps/artistTracks.json");
-export const playlistTracksMapJson = (): PlaylistTracksMap => readJson("./itunes/maps/playlistTracks.json");
-export const tracksMapJson         = (): TracksMap         => readJson("./itunes/maps/tracks.json");
-
-const ord = readJson("./itunes/ordinalWords.json");
+const ord = readJson("./data/ordinalWords.json");
 const ordinalToNum =
   ord.reduce((acc: StringMap, x: StringTuple) => ({
     ...acc,
     [x[1]]: parseInt(x[0]) - 1,
   }), {} as StringMap);
 
-const albumsMap         =         albumsMapJson();
-const artistMap         =         artistMapJson();
-const artistAlbumsMap   =   artistAlbumsMapJson();
-const artistTracksMap   =   artistTracksMapJson();
-const playlistTracksMap = playlistTracksMapJson();
-const tracksMap         =         tracksMapJson();
+const trackLocations = (files: SqlTrack[]) => files.map(x => x.location.split("/iTunes%20Media/Music/")[1] || "")
 
 let cachedIntents: {[text: string]: Message} = {};
 export async function textToIntent(text: string): Promise<Message> {
@@ -101,77 +88,118 @@ export async function doIntent(msg: Message) {
   const { playback, tracklist } = mopidy;
   const { intent, slots } = msg;
   const { playaction, playlistaction } = slots;
+  const shuffle = ["shuffle", "queue shuffle"].includes(playlistaction);
   const queue = playaction === "queue" || ["queue", "queue shuffle"].includes(playlistaction);
 
   switch(intent.name) {
     case "PlayArtistBest":
-      if(BEST_TRACKS_PLAYLIST) {
-        const playlistFiles = playlistTracksMap[BEST_TRACKS_PLAYLIST];
-        const bestTracks = playlistFiles.filter(({ artist }) => artist === slots.artist)
-        playTracks(bestTracks.map(({ file }) => file), { shuffle: true, queue });
-        break;
-      }
+    // TODO
+    //   if(BEST_TRACKS_PLAYLIST) {
+    //     const playlistFiles = playlistTracksMap[BEST_TRACKS_PLAYLIST];
+    //     const bestTracks = playlistFiles.filter(({ artist }) => artist === slots.artist)
+    //     playTracks(bestTracks.map(({ file }) => file), { shuffle: true, queue });
+    //     break;
+    //   }
     case "PlayArtist":
-      if(!slots?.artist || !artistMap[slots.artist]) {
-        return err("no artist", msg);
-      }
-      let artistTracks = artistTracksMap[slots.artist];
+      if(!slots?.artist) return err("no artist", msg);
+      const artistTracks = await dbQuery(`
+        SELECT t.location
+        FROM vox_artists va
+        INNER JOIN tracks t ON va.artist = t.artist
+        WHERE va.sentence = ? AND t.rating >= 80
+      `, [slots.artist]) as SqlTrack[];
       if(!artistTracks?.length) {
         return err("no tracks", msg);
       } else {
-        playTracks(artistTracks.map(x => x.file), { shuffle: true, queue });
+        playTracks(trackLocations(artistTracks), { shuffle: true, queue });
       }
       break;
 
     case "PlayRandomAlbumByArtist":
-      if(!slots?.artist || !artistAlbumsMap[slots.artist]?.length) {
-        return err("no albums for artist", msg);
-      }
-      const albumsOfArtist = artistAlbumsMap[slots.artist];
-      const rndAlbum = albumsOfArtist[rnd(albumsOfArtist.length)];
-      if(!rndAlbum?.tracks?.length) {
-        return err("no tracks", [ msg, rndAlbum ]);
-      } else {
-        playTracks(rndAlbum.tracks.map(x => x.file), { queue });
-      }
+      if(!slots?.artist) return err("no albums for artist", msg);
+      const [{ count }] = await dbQuery(`
+        SELECT COUNT(DISTINCT t.album) as count
+        FROM vox_artists va
+        INNER JOIN tracks t ON IFULL(t.album_artist, t.artist) = va.artist
+        WHERE va.sentence = ? AND album IS NOT NULL AND year IS NOT NULL
+        GROUP BY va.sentence
+      `, [slots.artist]) as Array<{count: number}>;
+
+      if(count) doIntent({
+        ...msg,
+        intent: { name: "PlayArtistAlbumByNumber" },
+        slots: {
+          artist: slots.artist,
+          albumnum: (Math.random() * count).toFixed(),
+        },
+      });
       break;
 
     case "PlayArtistAlbumByNumber":
-      console.log(msg, slots);
-      if(!slots.albumnum || !slots?.artist || !artistAlbumsMap[slots.artist]?.length) {
-        return err("no artist or album number", msg);
-      }
-      const albumIndex = ordinalToNum[slots.albumnum] || 0;
-      const artistAlbums = artistAlbumsMap[slots.artist];
-      if(!artistAlbums[albumIndex]) {
-        return err(`no ${slots.albumnum} album for ${slots.artist}`, msg);
-      }
-      playTracks(artistAlbums[albumIndex].tracks.map(x => x.file), { queue });
+      if(!slots?.albumnum || !slots?.artist) return err("no artist or album number", msg);
+
+      const albumIndex = ordinalToNum[slots.albumnum] || 1;
+      const albumNumTracks = await dbQuery(`
+        SELECT t.album, t.year
+        FROM vox_artists va
+        INNER JOIN tracks t ON IFULL(t.album_artist, t.artist) = va.artist
+        WHERE va.sentence = ? AND album IS NOT NULL AND year IS NOT NULL
+        GROUP BY t.album, t.year
+        ORDER BY t.year ASC
+        LIMIT 1 OFFSET ?
+      `, [slots.artist, albumIndex - 1]) as SqlTrack[];
+
+      playTracks(trackLocations(albumNumTracks), { queue });
       break;
 
     case "PlayAlbum":
-      if(!slots?.album || !albumsMap[slots.album]) {
-        return err("no album", msg);
-      }
-      const albums = albumsMap[slots.album];
-      const which = albums.length === 1 ? 0 : rnd(albums.length);
-      playTracks(albums[which].tracks.map(x => x.file), { queue });
+      if(!slots?.album) return err("no album", msg);
+      const albumTracks = await dbQuery(`
+        SELECT t.location
+        FROM vox_albums va
+        INNER JOIN tracks t ON va.album = t.album AND (va.artist IS NULL OR va.artist = IFNULL(album_artist, artist))
+        WHERE va.sentence = ?
+        GROUP BY t.track_id
+        ORDER BY t.album
+      `, [slots.album]) as SqlTrack[];
+      // FIXME: handle multiple albums
+      // const which = albums.length === 1 ? 0 : rnd(albums.length);
+      // playTracks(albums[which].tracks.map(x => x.file), { queue });
+      playTracks(trackLocations(albumTracks), { queue });
       break;
 
     case "StartPlaylist":
-      if(!slots?.playlist || !playlistTracksMap[slots.playlist]) {
-        return err("no playlist", msg);
-      }
-      const playlistFiles = playlistTracksMap[slots.playlist].map(x => x.file);
-      playTracks(playlistFiles, { shuffle: true, queue });
+      if(!slots?.playlist) return err("no playlist", msg);
+      const playlistTracks = await dbQuery(`
+        SELECT t.location
+        FROM vox_playlists vp
+        INNER JOIN playlist_items pi ON vp.playlist_id = pi.playlist_id
+        INNER JOIN tracks t ON pi.track_id = t.track_id
+        WHERE vp.sentence = ?
+        ${playlistaction === "shuffle" ? "ORDER BY RANDOM()" : ""}
+        ${MAX_QUEUED_TRACKS ? `LIMIT ${MAX_QUEUED_TRACKS}` : ""}
+      `, [slots.playlist]) as SqlTrack[];
+
+      playTracks(trackLocations(playlistTracks), { shuffle, queue });
       break;
 
     case "PlayTrack":
-      if(!slots?.track || !tracksMap[slots.track]) {
-        return err("no track", msg);
-      }
-      const trackFiles = tracksMap[slots.track].map(x => x.file);
-      playTracks(trackFiles, { shuffle: true, queue });
+      if(!slots?.track) return err("no track", msg);
+      const tracks = await dbQuery(`
+        SELECT t.location
+        FROM vox_tracks vt
+        INNER JOIN tracks t ON vt.track_id = t.track_id
+        WHERE vt.sentence = ?
+        ORDER BY RANDOM()
+        ${playlistaction === "shuffle" ? "ORDER BY RANDOM()" : ""}
+        ${MAX_QUEUED_TRACKS ? `LIMIT ${MAX_QUEUED_TRACKS}` : ""}
+      `, [slots.playlist]) as SqlTrack[];
+
+      playTracks(trackLocations(tracks), { shuffle: true, queue });
+      break;
+
+    case "Alias":
+      // TODO
       break;
 
     case "MusicVolumeSet":
@@ -193,9 +221,9 @@ export async function doIntent(msg: Message) {
       break;
 
     case "WhatIsPlaying":
-      const tracks = await tracklist.getTracks();
-      const i      = await tracklist.index();
-      const file = decodeURIComponent(tracks[i].replace(/^file:\/\//, ""));
+      const currentTracks = await tracklist.getTracks();
+      const i = await tracklist.index();
+      const file = decodeURIComponent(currentTracks[i].replace(/^file:\/\//, ""));
       const tags = "format_tags=artist,title,album";
       const probe = await execp(
         `ffprobe -show_entries ${tags} -of default=noprint_wrappers=1:nokey=1 ${file}`
