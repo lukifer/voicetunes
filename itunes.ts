@@ -104,11 +104,11 @@ async function doAlbums() {
 
 async function doArtists() {
   const artistSql = `
-    SELECT artist
+    SELECT artist, MAX(rating) as max_rating
     FROM tracks
     WHERE (${fileExtensionWhere})
     GROUP by artist
-    HAVING rating >= 80
+    HAVING max_rating >= 80
   `;
   const artistsRows = await dbQuery(artistSql);
   const artistNames = (artistsRows as SqlTrack[]).map(x => x.artist)
