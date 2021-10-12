@@ -120,7 +120,7 @@ export async function doIntent(msg: Message) {
       const [{ count }] = await dbQuery(`
         SELECT COUNT(DISTINCT t.album) as count
         FROM vox_artists va
-        INNER JOIN tracks t ON IFULL(t.album_artist, t.artist) = va.artist
+        INNER JOIN tracks t ON va.artist = IFNULL(t.album_artist, t.artist)
         WHERE va.sentence = ? AND album IS NOT NULL AND year IS NOT NULL
         GROUP BY va.sentence
       `, [slots.artist]) as Array<{count: number}>;
@@ -142,7 +142,7 @@ export async function doIntent(msg: Message) {
       const albumNumTracks = await dbQuery(`
         SELECT t.album, t.year
         FROM vox_artists va
-        INNER JOIN tracks t ON IFULL(t.album_artist, t.artist) = va.artist
+        INNER JOIN tracks t ON va.artist = IFNULL(t.album_artist, t.artist)
         WHERE va.sentence = ? AND album IS NOT NULL AND year IS NOT NULL
         GROUP BY t.album, t.year
         ORDER BY t.year ASC
@@ -157,7 +157,7 @@ export async function doIntent(msg: Message) {
       const albumTracks = await dbQuery(`
         SELECT t.location
         FROM vox_albums va
-        INNER JOIN tracks t ON va.album = t.album AND (va.artist IS NULL OR va.artist = IFNULL(album_artist, artist))
+        INNER JOIN tracks t ON va.album = t.album AND (va.artist IS NULL OR va.artist = IFNULL(t.album_artist, t.artist))
         WHERE va.sentence = ?
         GROUP BY t.track_id
         ORDER BY t.album
