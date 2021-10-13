@@ -137,19 +137,25 @@ export async function doIntent(msg: Message) {
 
     case "PlayArtistAlbumByNumber":
       if(!slots?.albumnum || !slots?.artist) return err("no artist or album number", msg);
-
       const albumIndex = ordinalToNum[slots.albumnum] || 1;
       const albumNumTracks = await dbQuery(`
-        SELECT t.album, t.year
-        FROM vox_artists va
-        INNER JOIN tracks t ON va.artist = IFNULL(t.album_artist, t.artist)
-        WHERE va.sentence = ? AND album IS NOT NULL AND year IS NOT NULL
-        GROUP BY t.album, t.year
-        ORDER BY t.year ASC
-        LIMIT 1 OFFSET ?
+        SELECT tracks.location
+        FROM tracks
+        INNER JOIN (
+          SELECT t.album, t.album_artist
+          FROM vox_artists va
+          INNER JOIN tracks t ON va.artist = IFNULL(t.album_artist, t.artist)
+          WHERE va.sentence = ? AND album IS NOT NULL AND year IS NOT NULL
+          GROUP BY t.album, t.year
+          ORDER BY t.year ASC
+          LIMIT 1 OFFSET ?
+        ) as a ON a.album = tracks.album AND a.album_artist = tracks.album_artist
       `, [slots.artist, albumIndex - 1]) as SqlTrack[];
-
-      playTracks(trackLocations(albumNumTracks), { queue });
+      if(!albumNumTracks?.length) {
+        return err(`no tracks found for ${slots.artist} album #${albumIndex}`, msg);
+      } else {
+        playTracks(trackLocations(albumNumTracks), { queue });
+      }
       break;
 
     case "PlayAlbum":
@@ -176,7 +182,7 @@ export async function doIntent(msg: Message) {
         INNER JOIN playlist_items pi ON vp.playlist_id = pi.playlist_id
         INNER JOIN tracks t ON pi.track_id = t.track_id
         WHERE vp.sentence = ?
-        ${playlistaction === "shuffle" ? "ORDER BY RANDOM()" : ""}
+        ${shuffle ? "ORDER BY RANDOM()" : ""}
         ${MAX_QUEUED_TRACKS ? `LIMIT ${MAX_QUEUED_TRACKS}` : ""}
       `, [slots.playlist]) as SqlTrack[];
 
@@ -191,7 +197,7 @@ export async function doIntent(msg: Message) {
         INNER JOIN tracks t ON vt.track_id = t.track_id
         WHERE vt.sentence = ?
         ORDER BY RANDOM()
-        ${playlistaction === "shuffle" ? "ORDER BY RANDOM()" : ""}
+        ${shuffle ? "ORDER BY RANDOM()" : ""}
         ${MAX_QUEUED_TRACKS ? `LIMIT ${MAX_QUEUED_TRACKS}` : ""}
       `, [slots.playlist]) as SqlTrack[];
 
