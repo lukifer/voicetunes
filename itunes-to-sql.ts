@@ -3,10 +3,10 @@
 // adapted from https://github.com/drien/itunes-to-sql
 
 import {ArgumentParser} from "argparse";
-import * as fs from "fs";
-import Moment from "moment";
-import plistlib from "plistlib";
-import sqlite3 from "sqlite3";
+import * as fs          from "fs";
+import {Moment}         from "moment";
+import plist            from "plist";
+import sqlite3          from "sqlite3";
 
 type Args = {
   db: string;
@@ -98,49 +98,23 @@ const get_parameterized = (table: string, keys: string[], len: number) =>
   `INSERT INTO ${table} (${keys.join(', ')}) VALUES (${[...Array(len)].fill("?")})`;
 
 const db_run = (db: sqlite3.Database, sql: string, vals: Array<string|boolean|number> = []) =>
-  new Promise(resolve => db.run(sql, vals, (err: Error) => {
+  new Promise<void>(resolve => db.run(sql, vals, (err: Error) => {
     if(err) console.log(err, sql, vals);
     return resolve();
   }));
 
-export function strip_plist(item: any) {
-  if (typeof item !== "object" || !item?.type)
-    return item
-
-  const {value} = item
-  switch (item.type) {
-    case "array": return value.map((x: any) => strip_plist(x))
-    case "dict": return Object.keys(value).reduce((acc, k) => ({...acc, [k]: strip_plist(value[k])}), {})
-    case "Buffer": return {}; // TODO
-    default: return value;
-  }
+export function plist_load(plist_path: string) {
+  const xml = fs.readFileSync(plist_path.replace(/^~/, process.env.HOME));
+  const result = plist.parse(xml.toString());
+  return result as PlistLibrary;
 }
-
-export const plist_load = (plist_path: string) =>
-  new Promise(resolve => (plistlib as any).load(plist_path.replace(/^~/, process.env.HOME),
-    (err: Error, pre_result: unknown) => {
-      if(err || !pre_result) { console.log(err || `Could not read file ${plist_path}`); process.exit(); }
-      const result = strip_plist(pre_result) as PlistLibrary
-      return resolve({
-        Tracks: Object.values(result.Tracks || {}).map((track: PlistTrack) =>
-          Object.entries(track)
-            .reduce((acc, [k, v]) => ({...acc, [k]: v instanceof Moment ? v.toISOString() : v}), {})
-        ),
-        Playlists: (result.Playlists || []).map(playlist => ({
-          ...playlist,
-          ["Playlist Items"]: (playlist["Playlist Items"] || []).map(playlistItem => playlistItem["Track ID"]),
-        })),
-      });
-    }
-  ));
 
 export function process_tracks(library: Library): [string, SqlInsert[]] {
   let all_keys = new Set<string>();
   const inserts = [] as SqlInsert[];
 
-  for (const track_id in Object.keys(library['Tracks'])) {
+  Object.keys(library['Tracks']).forEach(track_id => {
     const track = library['Tracks'][track_id];
-
     if (track["File Type"] && /^[0-9]+$/.test(`${track["File Type"]}`)) {
       track["File Type"] = num_to_str(parseInt(track["File Type"])).replace(/ /g, '');
     }
@@ -154,7 +128,7 @@ export function process_tracks(library: Library): [string, SqlInsert[]] {
       get_parameterized('tracks', track_keys, track_vals.length),
       track_vals,
     ]);
-  }
+  });
 
   const fields = map_types({
     "TEXT": [
@@ -183,26 +157,28 @@ export function process_playlists(library: Library): [string, string, SqlInsert[
   let all_keys = new Set();
   const inserts = [] as SqlInsert[];
 
-  library["Playlists"].forEach(playlist => {
-    const { ["Playlist Items"]: track_ids, ...playlist_data } = playlist
+  library["Playlists"]
+    .filter(playlist => playlist.Master === undefined)
+    .filter(playlist => playlist["Playlist Items"]?.length)
+    .forEach(playlist => {
+      const { ["Playlist Items"]: tracks, ...playlist_data } = playlist
 
-    const playlist_keys = Object.keys(playlist_data).map(slugify);
-    const playlist_vals = Object.values(playlist_data);
+      const playlist_keys = Object.keys(playlist_data).map(slugify);
+      const playlist_vals = Object.values(playlist_data);
 
-    all_keys = new Set([...Array.from(all_keys), ...playlist_keys]);
+      all_keys = new Set([...Array.from(all_keys), ...playlist_keys]);
 
-    inserts.push([
-      get_parameterized("playlists", playlist_keys, playlist_vals.length),
-      playlist_vals,
-    ]);
-
-    track_ids.forEach(track_id => {
       inserts.push([
-        get_parameterized("playlist_items", ["playlist_id", "track_id"], 2),
-        [playlist["Playlist ID"], track_id],
+        get_parameterized("playlists", playlist_keys, playlist_vals.length),
+        playlist_vals,
       ]);
-    })
-  })
+      tracks.forEach(track => {
+        inserts.push([
+          get_parameterized("playlist_items", ["playlist_id", "track_id"], 2),
+          [playlist["Playlist ID"], track["Track ID"]],
+        ]);
+      });
+    });
 
   const fields = map_types({
     "TEXT": ["name", "playlist_persistent_id"],
@@ -229,7 +205,7 @@ export async function convert_to_db(args: Args) {
     }
   }
 
-  const library = await plist_load(args.library) as any;
+  const library = plist_load(args.library) as any;
 
   const [table_tracks, insert_tracks] = process_tracks(library);
   const [table_playlists, table_playlist_items, insert_playlists] = process_playlists(library);

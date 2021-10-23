@@ -1,4 +1,8 @@
 import * as fs from "fs";
+import {sql}   from "@databases/sqlite";
+
+import {dbQuery} from "./db";
+import {readJson} from "./utils";
 
 import {
   EntityFilterType,
@@ -6,16 +10,12 @@ import {
 } from "./types";
 
 import config from "./config";
-const { PATH_DATABASE } = config;
-
-import { dbConnect, dbQuery, readJson } from "./utils";
+const {ALIAS} = config;
 
 const ordinalWordsJson = readJson("./data/ordinalWords.json");
 
-dbConnect(PATH_DATABASE);
-
 async function get(which: EntityFilterType) {
-  const sentences = await dbQuery(`SELECT sentence FROM vox_${which}`) as VoxSentence[] || []
+  const sentences = await dbQuery(sql`SELECT sentence FROM ${sql.ident(`vox_${which}`)}`) as VoxSentence[] || []
   return sentences.map(({sentence}) => sentence);
 }
 
@@ -56,6 +56,9 @@ album = (${albumKeys.join(" | ")}){album}
 playlistaction = (start | play | shuffle | queue | queue shuffle){action}
 <playlistaction> (play list | playlist) <playlist>
 playlist = (${playlistKeys.join(" | ")}){playlist}
+
+[Alias]
+${Object.keys(ALIAS).join("\n")}
 
 [ReadLog]
 what is the last log entry

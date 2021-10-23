@@ -27,11 +27,12 @@ const {
 
 const execp = promisify(exec);
 
-SFX.init(AUDIO_DEVICE_OUT);
 export const mopidy = new Mopidy({ webSocketUrl: URL_MOPIDY });
-LED.open();
 
 mopidy.on("state:online", async () => {
+  SFX.init(AUDIO_DEVICE_OUT);
+  LED.open();
+
   await BT.connect();
   LED.flair();
   await mopidy.tracklist.clear();
@@ -78,7 +79,6 @@ async function denoise() {
 let listenStartTimestamp = 0;
 let listenDurationMs     = 0;
 
-
 async function startListening() {
   listenStartTimestamp = now();
   await mopidy.playback.pause();
@@ -98,14 +98,14 @@ async function startListening() {
   ].join(" | "));
 
   if(listenDurationMs < MIN_LISTEN_DURATION_MS) {
-    console.log("negatory");
+    console.log(`negatory: ${listenDurationMs}ms`);
     return;
   }
 
   let msg = stdout[0] === "{" && JSON.parse(stdout);
 
   if(msg) {
-    await doIntent(msg);
+    await doIntent({...msg, intentName: msg.intent.name});
     LED.stopSpin();
     return;
   }
@@ -139,7 +139,7 @@ async function stopListening() {
   }
 }
 
-function err(msg: string, also: unknown) {
-  console.log(`err: ${msg}`, also);
-  SFX.error();
-}
+// function err(msg: string, also: unknown) {
+//   console.log(`err: ${msg}`, also);
+//   SFX.error();
+// }

@@ -227,13 +227,109 @@ export interface MessageSlots {
   volume?:         number;
 }
 
-// TODO: Gives slots record subfield values more robust types
-export interface Message {
-  intent: MessageIntent;
-  // slots: Partial<Record<SlotType, string>>;
-  slots: MessageSlots;
+export type Message = MessagePlayArtistBest
+                    | MessagePlayArtist
+                    | MessagePlayArtistAlbumByNumber
+                    | MessagePlayRandomAlbumByArtist
+                    | MessagePlayAlbum
+                    | MessagePlayTrack
+                    | MessageStartPlaylist
+                    | MessageMusicVolumeSet
+                    | MessageMusicVolumeChange
+                    | MessageMisc
+                    ;
+
+export interface MessageBase {
+  text: string;
+  intent: {
+    name: "PlayArtistBest"
+        | "PlayArtist"
+        | "PlayRandomAlbumByArtist"
+        | "PlayArtistAlbumByNumber"
+        | "PlayAlbum"
+        | "StartPlaylist"
+        | "PlayTrack"
+        | "MusicVolumeSet"
+        | "MusicVolumeChange"
+        | "Alias"
+        | "Nevermind"
+  }
+  slots: object;
 }
 
-export interface MessageIntent {
-  name: string;
+export interface MessagePlayArtistBest extends MessageBase {
+  intentName: "PlayArtistBest";
+  // playaction: "shuffle" | "play",
+  // playlistaction: "play" | "shuffle" | "queueshuffle",
+  slots: {
+    artist: string;
+  }
+}
+
+export interface MessagePlayArtist extends MessageBase {
+  intentName: "PlayArtist";
+  slots: {
+    artist: string;
+  }
+}
+
+export interface MessagePlayRandomAlbumByArtist extends MessageBase {
+  intentName: "PlayRandomAlbumByArtist";
+  slots: {
+    artist: string;
+  }
+}
+
+export interface MessagePlayArtistAlbumByNumber extends MessageBase {
+  intentName: "PlayArtistAlbumByNumber";
+  slots: {
+    albumnum: number;
+    artist: string;
+  }
+}
+
+export interface MessagePlayAlbum extends MessageBase {
+  intentName: "PlayAlbum";
+  slots: {
+    album: string;
+  }
+}
+
+export interface MessageStartPlaylist extends MessageBase {
+  intentName: "StartPlaylist";
+  slots: {
+    playlist: string;
+  }
+}
+
+export interface MessagePlayTrack extends MessageBase {
+  intentName: "PlayTrack";
+  slots: {
+    track: string;
+  }
+}
+
+export interface MessageMusicVolumeSet extends MessageBase {
+  intentName: "MusicVolumeSet";
+  slots: {
+    volume: number;
+  }
+}
+
+export interface MessageMusicVolumeChange extends MessageBase {
+  intentName: "MusicVolumeChange";
+  slots: {
+    direction: "up" | "down";
+  }
+}
+
+export interface MessageMisc extends MessageBase {
+  intentName: "Alias"
+            | "NextTrack"
+            | "PreviousTrack"
+            | "Resume"
+            | "Stop"
+            | "WhatIsTime"
+            | "Nevermind"
+            ;
 }

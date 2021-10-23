@@ -1,3 +1,4 @@
+import {sql} from '@databases/sqlite';
 import {
   filterAlbums,
   filterArtists,
@@ -15,18 +16,23 @@ import {
   SqlTrack,
 } from "./types";
 
-import { dbConnect, dbExec, dbQuery } from "./utils";
+import {
+  dbClose,
+  dbQuery,
+  dbRaw,
+  knexConnect,
+} from "./db";
 
 import config from "./config";
 const {
   EXCLUDE_GENRES,
   FILE_EXTENSIONS,
-  PATH_DATABASE,
 } = config;
 
-const [db, knex] = dbConnect(PATH_DATABASE);
+const knex = knexConnect();
 
-const fileExtensionWhere = FILE_EXTENSIONS.map(ext => `location LIKE "%${ext}"`).join(" OR ")
+const fileExtensionsLike = FILE_EXTENSIONS.map(ext => sql`location LIKE ${"%"+ext}`);
+const fileExtensionWhere = sql`${sql.join(fileExtensionsLike, sql`) OR (`)}`;
 
 async function resetTables() {
   const voxTables = {
@@ -56,22 +62,24 @@ async function resetTables() {
     "vox_playlists": ["playlist_id", "playlists"],
     "vox_tracks": ["track_id", "tracks"],
   }
-  Object.entries(voxTables).forEach(async ([table, fields]) => {
-    await dbExec(`DROP TABLE IF EXISTS "${table}"`);
+  for (const entry of Object.entries(voxTables)) {
+    const [table, fields] = entry;
+    await dbQuery(sql`DROP TABLE IF EXISTS ${sql.ident(table)}`);
     const fieldsStr = Object.entries(fields).map(([name, type]) => `"${name}" ${type}`).join(", ");
-    let createSql = `CREATE TABLE "${table}" ('id' integer, ${fieldsStr}, PRIMARY KEY (id)`;
+    let createSql = `CREATE TABLE "${table}" ("id" integer, ${fieldsStr}, PRIMARY KEY (id)`;
     if (foreignKeys[table]) {
       const [foreignKey, foreignTable] = foreignKeys[table];
       createSql += `, FOREIGN KEY(${foreignKey}) REFERENCES ${foreignTable}(${foreignKey})`;
     }
     createSql += ')';
-    await dbExec(createSql)
-  });
+    await dbRaw(createSql);
+  }
 }
 
 async function doAlbums() {
-  const albumsSql = `
-    SELECT artist, album, compilation, year, MAX(rating) as max_rating, iif(album_artist IS NOT NULL OR compilation = 1, album_artist, artist) as derived_artist
+  const albumsSql = sql`
+    SELECT artist, album, compilation, year, MAX(rating) as max_rating,
+      (CASE WHEN album_artist IS NOT NULL OR compilation = 1 THEN album_artist ELSE artist END) as derived_artist
     FROM tracks
     WHERE album IS NOT NULL
     AND track_number IS NOT NULL
@@ -80,7 +88,9 @@ async function doAlbums() {
     HAVING max_rating >= 80
   `;
   const albums = await dbQuery(albumsSql) as SqlTrack[] || [];
-  albums.filter(({album}) => filterAlbums(album)).forEach(async (album) => {
+  const filteredAlbums = albums.filter(({album}) => filterAlbums(album));
+
+  for (const album of filteredAlbums) {
     const albumSentence  = scrubAlbumName(album.album);
     if(!albumSentence) return;
     const newRows = [{
@@ -96,14 +106,14 @@ async function doAlbums() {
         artist: album.album_artist || album.artist,
       });
     }
-    newRows.forEach(async (newRow) =>
-      await dbExec(knex('vox_albums').insert(newRow).toString())
-    );
-  });
+    for (const newRow of newRows) {
+      await dbRaw(knex('vox_albums').insert(newRow).toString());
+    }
+  }
 }
 
 async function doArtists() {
-  const artistSql = `
+  const artistSql = sql`
     SELECT artist, MAX(rating) as max_rating
     FROM tracks
     WHERE (${fileExtensionWhere})
@@ -111,19 +121,19 @@ async function doArtists() {
     HAVING max_rating >= 80
   `;
   const artistsRows = await dbQuery(artistSql);
-  const artistNames = (artistsRows as SqlTrack[]).map(x => x.artist)
+  const artistNames = (artistsRows as SqlTrack[]).map(x => x.artist);
+  const filteredArtists = artistNames.filter(filterArtists);
 
-  artistNames.filter(filterArtists).forEach(async (artist: string) => {
-    const artistSentence = scrubArtistName(artist);
-    await dbExec(knex('vox_artists').insert({
-      sentence: artistSentence,
+  for (const artist of filteredArtists) {
+    await dbRaw(knex('vox_artists').insert({
+      sentence: scrubArtistName(artist),
       artist,
-    }).toString())
-  });
+    }).toString());
+  }
 }
 
 async function doGenres() {
-  const genresSql = `
+  const genresSql = sql`
     SELECT genre
     FROM tracks
     WHERE genre IS NOT NULL
@@ -131,58 +141,74 @@ async function doGenres() {
     GROUP BY genre
   `;
   const genres = await dbQuery(genresSql) as SqlTrack[] || [];
-  genres.filter(({genre}) => filterGenres(genre)).forEach(async ({genre}) => {
+  const filteredGenres = genres.filter(({genre}) => filterGenres(genre));
+
+  for (const genreEntry of filteredGenres) {
     // const genreSentence = (substitutions.genres[genre] || genre).toLowerCase();
+    const {genre} = genreEntry;
     const genreSentence = genre.toLowerCase();
     const newRow = {
       sentence: genreSentence,
       genre,
-    }
-    await dbExec(knex('vox_genres').insert(newRow).toString());
-  });
+    };
+    await dbRaw(knex('vox_genres').insert(newRow).toString());
+  }
 }
 
 async function doPlaylists() {
-  const playlistsSql = `
+  const playlistsSql = sql`
     SELECT name, playlist_id
     FROM playlists
-    WHERE master IS NULL
-    AND distinguished_kind IS NULL
+    WHERE distinguished_kind IS NULL
     AND folder IS NULL
   `;
   const playlists = await dbQuery(playlistsSql) as SqlPlaylist[] || [];
-  playlists.filter(({name}) => filterPlaylists(name)).forEach(async ({name, playlist_id}) => {
+  const filteredPlaylists = playlists.filter(({name}) => filterPlaylists(name));
+
+  for (const playlist of filteredPlaylists) {
+    const {name, playlist_id} = playlist;
     const playlistSentence = (substitutions.playlists[name] || name).toLowerCase();
     const newRow = {
       sentence: playlistSentence,
       playlist_id,
-    }
-    await dbExec(knex('vox_playlists').insert(newRow).toString());
-  });
+    };
+    await dbRaw(knex('vox_playlists').insert(newRow).toString());
+  }
 }
 
 async function doTracks() {
-  const tracksSql = `
+  const genreExclude = EXCLUDE_GENRES?.length
+    ? sql`AND genre NOT IN (${sql.join(EXCLUDE_GENRES.map((x: string) => sql`${x}`), sql`,`)})`
+    : sql``;
+  const tracksSql = sql`
     SELECT artist, name, track_id
     FROM tracks
     WHERE rating >= 80
     AND (${fileExtensionWhere})
-    AND genre NOT IN ("${EXCLUDE_GENRES.join('","')}")
+    ${genreExclude}
   `;
   const tracks = await dbQuery(tracksSql) as SqlTrack[] || [];
-  tracks.filter(({name}) => filterTracks(name)).forEach(async ({artist, name, track_id}) => {
+  const filteredTracks = tracks.filter(({name}) => filterTracks(name));
+
+  for (const track of filteredTracks) {
+    const {artist, name, track_id} = track;
     const trackSentence = scrubTrackName(name);
     const trackByArtistSentence = `${trackSentence} by ${scrubArtistName(artist)}`;
-    [
+    const newRows = [
       { sentence: trackSentence },
       { sentence: trackByArtistSentence },
-    ].forEach(async (newRow) => {
-      await dbExec(knex('vox_tracks').insert({
+    ];
+    for (const newRow of newRows) {
+      console.log(knex('vox_tracks').insert({
         ...newRow,
         track_id,
       }).toString());
-    })
-  });
+      await dbRaw(knex('vox_tracks').insert({
+        ...newRow,
+        track_id,
+      }).toString());
+    }
+  }
 }
 
 async function go() {
@@ -192,7 +218,7 @@ async function go() {
   await doGenres();
   await doPlaylists();
   await doTracks();
-  db.close()
+  dbClose()
 }
 
 go();
