@@ -172,10 +172,10 @@ export function process_playlists(library: Library): [string, string, SqlInsert[
         get_parameterized("playlists", playlist_keys, playlist_vals.length),
         playlist_vals,
       ]);
-      tracks.forEach(track => {
+      tracks.forEach((track, n) => {
         inserts.push([
-          get_parameterized("playlist_items", ["playlist_id", "track_id"], 2),
-          [playlist["Playlist ID"], track["Track ID"]],
+          get_parameterized("playlist_items", ["playlist_id", "track_id", "pos"], 3),
+          [playlist["Playlist ID"], track["Track ID"], n],
         ]);
       });
     });
@@ -188,8 +188,10 @@ export function process_playlists(library: Library): [string, string, SqlInsert[
   const playlist_fields = Array.from(all_keys).map((k: string) => `${k} ${fields[k] || ''}`)
 
   const playlists_table = `CREATE TABLE playlists (${playlist_fields.join(", ")})`;
-  const pi_keys = ["playlist_id", "track_id"];
-  const foreign_keys = pi_keys.map(k => `FOREIGN KEY(${k}) REFERENCES ${k.replace(/_id$/, "s")}(${k})`).join(", ");
+  const pi_keys = ["playlist_id", "track_id", "pos"];
+  const foreign_keys = pi_keys.filter(x => /_id$/.test(x))
+                      .map(k => `FOREIGN KEY(${k}) REFERENCES ${k.replace(/_id$/, "s")}(${k})`)
+                      .join(", ");
   const items_table = `CREATE TABLE playlist_items (${pi_keys.map(k => k+" INTEGER NOT NULL").join(", ")}, ${foreign_keys})`;
 
   return [playlists_table, items_table, inserts];

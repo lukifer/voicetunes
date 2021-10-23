@@ -125,11 +125,11 @@ test("parses a 'start playlist' intent", async () => {
     `Ray%20Charles/Unknown%20Album/Shake%20Your%20Tailfeathers.mp3`,
     `Party%20Ben/Unknown%20Album/Callin'%20Up%20the%20Pieces%20%5BLyrics%20Born%20vs.%20Average%20White%20Band%5D.mp3`,
     `Morris%20Day%20and%20The%20Time/Unknown%20Album/Jungle%20Love.mp3`,
-    `KWS/Unknown%20Album/Please%20Don't%20Go.mp3`,
-    `Rejoice/Unknown%20Album/Peace%20Love%20&%20Harmony.mp3`,
     `Monae/Unknown%20Album/Tightrope%20%5Bfeat.%20Leftfoot%5D.mp3`,
-    `C+C%20Music%20Factory/Unknown%20Album/Everybody%20Dance%20Now.mp3`,
     `Jamiroquai/Unknown%20Album/Canned%20Heat.mp3`,
+    `Rejoice/Unknown%20Album/Peace%20Love%20&%20Harmony.mp3`,
+    `C+C%20Music%20Factory/Unknown%20Album/Everybody%20Dance%20Now.mp3`,
+    `KWS/Unknown%20Album/Please%20Don't%20Go.mp3`,
   ].map(mp3 => `${basePath}${mp3}`);
   const [first, ...remainder] = testFiles;
   await wait(300);

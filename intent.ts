@@ -171,7 +171,9 @@ export async function doStartPlaylist(msg: MessageStartPlaylist) {
   const { slots } = msg;
   if(!slots?.playlist) return err("no playlist", msg);
   const shuffle = false; // temp
-  const orderBy = sql.__dangerous__rawValue(shuffle ? "ORDER BY RANDOM()" : "");
+  const orderBy = shuffle
+    ? sql.__dangerous__rawValue("ORDER BY RANDOM()")
+    : sql`ORDER BY ${sql.ident("pi", "pos")}`;
   const playlistTracks = await dbQuery(sql`
     SELECT t.location
     FROM vox_playlists vp
