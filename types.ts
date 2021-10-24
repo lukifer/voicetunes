@@ -299,6 +299,7 @@ export interface MessageStartPlaylist extends MessageBase {
   intentName: "StartPlaylist";
   slots: {
     playlist: string;
+    playlistaction: "start" | "play" | "shuffle";
   }
 }
 

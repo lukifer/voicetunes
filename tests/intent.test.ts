@@ -1,8 +1,8 @@
 import Mopidy from "mopidy";
-import { doIntent, playTracks } from "../intent";
-import { wait }                 from "../utils";
+import {doIntent, playTracks} from "../intent";
+import {wait}                 from "../utils";
 
-global.Math.random = () => 0.38;
+import {danseFiles} from "./mockData";
 
 jest.mock('mopidy', () => {
   (global as any).mockMopidy = {
@@ -27,6 +27,7 @@ function expectTracksAdded(uris: string[]) {
 const basePath = "file:///home/pi/music/";
 
 beforeEach(() => {
+  global.Math.random = () => 0.38;
   const {mockMopidy} = (global as any);
   mockMopidy.playback.play.mockClear();
   mockMopidy.tracklist.add.mockClear();
@@ -116,46 +117,29 @@ test("parses a 'start playlist' intent", async () => {
   await doIntent({
     text: "start playlist danse",
     intent: {name: "StartPlaylist"},
-    slots: {playlist: "danse"},
+    slots: {playlist: "danse", playlistaction: "start"},
   });
-  const testFiles = [
-    `Kent/Unknown%20Album/Vy%20Ett%20Luftslott.mp3`,
-    `Roxette/Unknown%20Album/The%20Look.mp3`,
-    `Scissor%20Sisters/Night%20Work/01%20Night%20Work.mp3`,
-    `Ray%20Charles/Unknown%20Album/Shake%20Your%20Tailfeathers.mp3`,
-    `Party%20Ben/Unknown%20Album/Callin'%20Up%20the%20Pieces%20%5BLyrics%20Born%20vs.%20Average%20White%20Band%5D.mp3`,
-    `Morris%20Day%20and%20The%20Time/Unknown%20Album/Jungle%20Love.mp3`,
-    `Monae/Unknown%20Album/Tightrope%20%5Bfeat.%20Leftfoot%5D.mp3`,
-    `Jamiroquai/Unknown%20Album/Canned%20Heat.mp3`,
-    `Rejoice/Unknown%20Album/Peace%20Love%20&%20Harmony.mp3`,
-    `C+C%20Music%20Factory/Unknown%20Album/Everybody%20Dance%20Now.mp3`,
-    `KWS/Unknown%20Album/Please%20Don't%20Go.mp3`,
-  ].map(mp3 => `${basePath}${mp3}`);
-  const [first, ...remainder] = testFiles;
+  const testFiles = danseFiles.map(mp3 => `${basePath}${mp3}`);
   await wait(300);
-  expectTracksAdded([first]);
-  expectTracksAdded(remainder.slice(0, 5));
-  expectTracksAdded(remainder.slice(5, 10));
+  expectTracksAdded([testFiles[0]]);
+  expectTracksAdded(testFiles.slice(1, 6));
+  expectTracksAdded(testFiles.slice(6, 11));
 });
 
-// test("parses a 'shuffle playlist' intent", async () => {
-//   const {mockMopidy} = (global as any);
-//   await doIntent({
-//     intent: {name: "StartPlaylist"},
-//     slots: {playlist: "danse", playaction: "shuffle"},
-//   });
-//   const testFiles = [
-//     `Kent/Unknown%20Album/Vy%20Ett%20Luftslott.mp3`,
-//     `Roxette/Unknown%20Album/The%20Look.mp3`,
-//     `Scissor%20Sisters/Night%20Work/01%20Night%20Work.mp3`,
-//     `Ray%20Charles/Unknown%20Album/Shake%20Your%20Tailfeathers.mp3`,
-//     `Party%20Ben/Unknown%20Album/Callin'%20Up%20the%20Pieces%20%5BLyrics%20Born%20vs.%20Average%20White%20Band%5D.mp3`,
-//     `Morris%20Day%20and%20The%20Time/Unknown%20Album/Jungle%20Love.mp3`,
-//   ].map(mp3 => `${basePath}${mp3}`);
-//   const [first, ...remainder] = testFiles;
-//   expect(mockMopidy.tracklist.add).toHaveBeenCalledWith({uris: [ first ]});
-//   expect(mockMopidy.tracklist.add).toHaveBeenCalledWith({uris: remainder});
-// });
+test("parses a 'shuffle playlist' intent", async () => {
+  const {mockMopidy} = (global as any);
+  await doIntent({
+    text: "shuffle playlist danse",
+    intent: {name: "StartPlaylist"},
+    slots: {playlist: "danse", playlistaction: "shuffle"},
+  });
+  const testFiles = danseFiles.map(mp3 => `${basePath}${mp3}`);
+  await wait(300);
+  const {tracklist} = mockMopidy;
+  expect(tracklist.add).toHaveBeenCalled();
+  expect(tracklist.add).not.toHaveBeenCalledWith({ uris: testFiles.slice(1, 6) });
+  expect(tracklist.add).not.toHaveBeenCalledWith({ uris: testFiles.slice(6, 11) });
+});
 
 test("parses a 'play track' intent", async () => {
   const testFiles = {

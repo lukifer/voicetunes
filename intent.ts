@@ -169,8 +169,9 @@ export async function doPlayAlbum(msg: MessagePlayAlbum) {
 
 export async function doStartPlaylist(msg: MessageStartPlaylist) {
   const { slots } = msg;
+  const { playlistaction } = slots;
   if(!slots?.playlist) return err("no playlist", msg);
-  const shuffle = false; // temp
+  const shuffle = (playlistaction === "shuffle");
   const orderBy = shuffle
     ? sql.__dangerous__rawValue("ORDER BY RANDOM()")
     : sql`ORDER BY ${sql.ident("pi", "pos")}`;
