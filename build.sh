@@ -5,10 +5,11 @@ if [[ $# -eq 0 ]] ; then
 fi
 
 npm i
-ts-node itunes-to-sql.ts --overwrite --db itunes.sqlite3
+ts-node itunes-to-sql.ts --overwrite
 ts-node itunes.ts
 ts-node sentences.ini.ts
-touch sounds_like.txt
+
+touch data/sounds_like.txt
 
 for ssh in "$@"
 do

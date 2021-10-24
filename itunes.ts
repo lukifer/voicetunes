@@ -199,10 +199,6 @@ async function doTracks() {
       { sentence: trackByArtistSentence },
     ];
     for (const newRow of newRows) {
-      console.log(knex('vox_tracks').insert({
-        ...newRow,
-        track_id,
-      }).toString());
       await dbRaw(knex('vox_tracks').insert({
         ...newRow,
         track_id,

@@ -228,7 +228,7 @@ export async function convert_to_db(args: Args) {
 async function main() {
   const defaultArgs = {
     library: "~/Music/iTunes/iTunes\ Music\ Library.xml",
-    db: "itunes.db",
+    db: "itunes.sqlite3",
   } as Args;
 
   const parser = new ArgumentParser();
