@@ -83,7 +83,7 @@ export async function textToIntent(text: string): Promise<Message> {
 
 async function doPlayArtist(msg: MessagePlayArtist) {
   const { slots } = msg;
-  // const { playaction, playlistaction } = slots;
+  const queue = slots.playaction === "queue";
   if(!slots?.artist) return err("no artist", msg);
   const artistTracks = await dbQuery(sql`
     SELECT t.location
@@ -94,14 +94,12 @@ async function doPlayArtist(msg: MessagePlayArtist) {
   if(!artistTracks?.length) {
     return err("no tracks", msg);
   } else {
-    // await playTracks(trackLocations(artistTracks), { shuffle: true, queue });
-    await playTracks(trackLocations(artistTracks), { shuffle: true, queue: false });
+    await playTracks(trackLocations(artistTracks), { shuffle: true, queue });
   }
 }
 
 async function doPlayRandomAlbumByArtist(msg: MessagePlayRandomAlbumByArtist) {
   const { slots } = msg;
-  // const { playaction, playlistaction } = slots;
   if(!slots?.artist) return err("no albums for artist", msg);
   const [{ count }] = await dbQuery(sql`
     SELECT COUNT(DISTINCT t.album) as count
@@ -123,7 +121,7 @@ async function doPlayRandomAlbumByArtist(msg: MessagePlayRandomAlbumByArtist) {
 
 async function doPlayArtistAlbumByNumber(msg: MessagePlayArtistAlbumByNumber) {
   const { slots } = msg;
-  // const { playaction, playlistaction } = slots;
+  const queue = slots.playaction === "queue";
   if(!slots?.albumnum || !slots?.artist) return err("no artist or album number", msg);
   const albumIndex = ordinalToNum[slots.albumnum] || 0;
   const albumNumTracks = await dbQuery(sql`
@@ -143,13 +141,13 @@ async function doPlayArtistAlbumByNumber(msg: MessagePlayArtistAlbumByNumber) {
   if(!albumNumTracks?.length) {
     return err(`no tracks found for ${slots.artist} album #${albumIndex}`, msg);
   } else {
-    // playTracks(trackLocations(albumNumTracks), { queue });
-    await playTracks(trackLocations(albumNumTracks), { queue: false });
+    playTracks(trackLocations(albumNumTracks), { queue });
   }
 }
 
 export async function doPlayAlbum(msg: MessagePlayAlbum) {
   const { slots } = msg;
+  const queue = slots.playaction === "queue";
   const albumTracks = await dbQuery(sql`
     SELECT t.location, t.artist
     FROM vox_albums va
@@ -162,8 +160,7 @@ export async function doPlayAlbum(msg: MessagePlayAlbum) {
     return err(`no tracks found for album ${slots.album}`, msg);
   } else {
     // FIXME: handle multiple albums with the same name
-    // playTracks(trackLocations(albumTracks), { queue });
-    await playTracks(trackLocations(albumTracks), { queue: false });
+    await playTracks(trackLocations(albumTracks), { queue });
   }
 }
 
@@ -195,6 +192,7 @@ export async function doStartPlaylist(msg: MessageStartPlaylist) {
 export async function doPlayTrack(msg: MessagePlayTrack) {
   const { slots } = msg;
   if(!slots?.track) return err("no track", msg);
+  const queue = slots.playaction === "queue";
   const tracks = await dbQuery(sql`
     SELECT t.location
     FROM vox_tracks vt
@@ -205,8 +203,7 @@ export async function doPlayTrack(msg: MessagePlayTrack) {
   if(!tracks?.length) {
     return err(`no tracks found for ${slots.track}`, msg);
   } else {
-    // playTracks(trackLocations(tracks), { shuffle: true, queue });
-    playTracks(trackLocations(tracks), { shuffle: true, queue: false });
+    playTracks(trackLocations(tracks), { shuffle: true, queue });
   }
 }
 

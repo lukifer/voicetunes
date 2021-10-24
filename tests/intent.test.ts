@@ -47,15 +47,16 @@ test('queues a track', async () => {
   const {mockMopidy} = (global as any);
   expect(mockMopidy.tracklist.clear).not.toHaveBeenCalled();
   expectTracksAdded([`${basePath}foo.mp3`])
-  expect(mockMopidy.playback.play).not.toHaveBeenCalled();
 });
 
-test("parses a 'play by artist' intent", async () => {
+test("parses a 'queue by artist' intent", async () => {
   await doIntent({
-    text: "play something by ah ha",
+    text: "queue something by ah ha",
     intent: {name: "PlayArtist"},
-    slots: {artist: "ah ha"},
+    slots: {artist: "ah ha", playaction: "queue"},
   });
+  const {mockMopidy} = (global as any);
+  expect(mockMopidy.tracklist.clear).not.toHaveBeenCalled();
   expectTracksAdded([`${basePath}Ah%20Ha/Unknown%20Album/Take%20On%20Me.mp3`]);
 });
 
@@ -69,7 +70,8 @@ test("parses a 'play nth album by artist' intent", async () => {
     `01%20Concerto%20in%20Dm.mp3`,
     `02%20In%20Flanders%20Fields.mp3`,
   ].map(mp3 => `${basePath}Allegaeon/Concerto%20in%20Dm/${mp3}`);
-  testFiles.forEach(file => expectTracksAdded([ file ]));
+  await wait(300);
+  for (const file of testFiles) expectTracksAdded([ file ]);
 });
 
 test("parses a 'play random album by artist' intent", async () => {

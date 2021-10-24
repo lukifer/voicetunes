@@ -267,9 +267,10 @@ export interface MessagePlayArtistBest extends MessageBase {
 }
 
 export interface MessagePlayArtist extends MessageBase {
-  intentName: "PlayArtist";
+  intentName: "PlayArtist" | "PlayArtistBest";
   slots: {
     artist: string;
+    playaction: "play" | "queue",
   }
 }
 
@@ -277,6 +278,7 @@ export interface MessagePlayRandomAlbumByArtist extends MessageBase {
   intentName: "PlayRandomAlbumByArtist";
   slots: {
     artist: string;
+    playaction: "play" | "queue",
   }
 }
 
@@ -285,6 +287,7 @@ export interface MessagePlayArtistAlbumByNumber extends MessageBase {
   slots: {
     albumnum: number;
     artist: string;
+    playaction: "play" | "queue",
   }
 }
 
@@ -292,6 +295,7 @@ export interface MessagePlayAlbum extends MessageBase {
   intentName: "PlayAlbum";
   slots: {
     album: string;
+    playaction: "play" | "queue",
   }
 }
 
@@ -299,7 +303,7 @@ export interface MessageStartPlaylist extends MessageBase {
   intentName: "StartPlaylist";
   slots: {
     playlist: string;
-    playlistaction: "start" | "play" | "shuffle";
+    playlistaction: "start" | "play" | "shuffle" | "queue";
   }
 }
 
@@ -307,6 +311,7 @@ export interface MessagePlayTrack extends MessageBase {
   intentName: "PlayTrack";
   slots: {
     track: string;
+    playaction: "play" | "queue";
   }
 }
 
