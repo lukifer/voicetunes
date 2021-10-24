@@ -16,6 +16,8 @@ do
     url="$(cut -d':' -f1 <<<$ssh)"
     echo "url $url $ssh"
 
+    scp itunes.sqlite3 "$ssh/itunes.sqlite3"
+
     ssh "$url" 'touch ~/.config/voice2json/sentences.base.ini'
     scp data/sentences.ini "$url":~/.config/voice2json/sentences.music.ini
     scp data/sounds_like.txt "$url":~/.config/voice2json/sounds_like.txt
