@@ -8,7 +8,7 @@
     "mqtt": "nodemon --watch '*.ts' --exec 'npx ts-node' mqttlisten.ts >> log.txt",
     "test": "jest --verbose",
     "train": "nodemon --exec 'ts-node' train.ts",
-    "debug": "sudo killall node; nodemon --watch '*.ts' --exec 'npx ts-node' index.ts"
+    "debug": "killall node; nodemon --watch '*.ts' --exec 'npx ts-node' index.ts"
   },
   "author": "",
   "license": "ISC",

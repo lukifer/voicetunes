@@ -53,7 +53,7 @@ albumnum = (${ordinalWordsJson.map((x: string[]) => x[1]).join(" | ")}){albumnum
 album = (${albumKeys.join(" | ")}){album}
 
 [StartPlaylist]
-playlistaction = (start | play | shuffle | queue){action}
+playlistaction = (start | play | shuffle | queue){playlistaction}
 <playlistaction> (play list | playlist) <playlist>
 playlist = (${playlistKeys.join(" | ")}){playlist}
 

@@ -361,6 +361,7 @@ export async function playTracks(tracks: string[], opts: PlayOptions = {}) {
   if(!queue) await tracklist.clear();
   await tracklist.add({ "uris": [ `file://${PATH_MUSIC}/${tracks[start]}` ] });
   if(!queue) await playback.play();
+  LED.stopSpin();
 
   // then add the remainder asynchronously (shuffling if needed)
   const remainingTracks = removeNth(tracks, start);
