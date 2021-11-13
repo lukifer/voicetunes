@@ -5,14 +5,14 @@ Rather than using a wake-word (which has a delay, and might result in false posi
 
 ## Example Voice Commands
 
-- "Play something by <artist>"
-- "Play song <trackname>"
-- "Play track <trackname> by <artist>"
-- "Play album <album>"
-- "Play album <album> by <artist>"
-- "Play the <nth> album by <artist>"
-- "Start playlist <playlist>"
-- "Shuffle playlist <playlist>"
+- "Play something by \<artist\>"
+- "Play song \<trackname\>"
+- "Play track \<trackname\> by \<artist\>"
+- "Play album \<album\>"
+- "Play album \<album\> by \<artist\>"
+- "Play the \<nth\> album by \<artist\>"
+- "Start playlist \<playlist\>"
+- "Shuffle playlist \<playlist\>"
 
 See `itunes/sentences.ini.ts` for the full list of grammars, in the simplified [JSGF](https://voice2json.org/sentences.html) format.
 
