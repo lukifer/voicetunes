@@ -27,8 +27,9 @@ declare module "mopidy" {
       add:       (args: addArgs)  => Promise<void>,
       clear:     ()               => Promise<void>,
       shuffle:   (args: number[]) => Promise<void>,
-      getTracks: ()               => Promise<any>,
-      index:     ()               => Promise<any>,
+      getTracks: ()               => Promise<string[]>,
+      getLength: ()               => Promise<number>,
+      index:     ()               => Promise<number>,
     };
   }
 

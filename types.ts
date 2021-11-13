@@ -191,28 +191,17 @@ export type iTunesEntity = iTunesAlbum | iTunesArtist | iTunesPlaylist | iTunesT
 export type EntityFilterType = "albums" | "artists" | "genres" | "playlists" | "tracks";
 export type EntityFilter = Required<Record<EntityFilterType, string[]>>
 
-export type OutputEntity = "albums"
-                         | "artist"
-                         | "artistAlbums"
-                         | "artistTracks"
-                         | "playlistTracks"
-                         | "tracks"
-                         ;
-export type OutputMaps = ArtistMap
-                       | ArtistAlbumsMap
-                       | ArtistTracksMap
-                       | AlbumsMap
-                       | PlaylistTracksMap
-                       | TracksMap
-                       ;
-
 export type LedPixel = [number, number, number];
 
-//export type SlotType = "action" | "album" | "artist" | "playaction" | "playlist" | "playlistaction" | "track" | "volume" | "direction";
+export type PlayStateCache = {
+  playbackPosition: number;
+  tracks: string[];
+};
 
 export interface PlayOptions {
   shuffle?: boolean;
   queue?: boolean;
+  seekMs?: number;
 }
 
 export interface MessageSlots {
@@ -240,27 +229,32 @@ export type Message = MessagePlayArtist
                     | MessageMisc
                     ;
 
+export type MessageIntent =
+  "PlayArtistBest"
+| "PlayArtist"
+| "PlayRandomAlbumByArtist"
+| "PlayArtistAlbumByNumber"
+| "PlayAlbum"
+| "PlayGenre"
+| "PlayGenreBest"
+| "StartPlaylist"
+| "PlayTrack"
+| "MusicVolumeSet"
+| "MusicVolumeChange"
+| "Alias"
+| "RestoreTracklist"
+| "SaveTracklist"
+| "PreviousTrack"
+| "Resume"
+| "Stop"
+| "WhatIsTime"
+| "Nevermind"
+;
+
 export interface MessageBase {
   text: string;
   intent: {
-    name: "PlayArtistBest"
-        | "PlayArtist"
-        | "PlayRandomAlbumByArtist"
-        | "PlayArtistAlbumByNumber"
-        | "PlayAlbum"
-        | "PlayGenre"
-        | "PlayGenreBest"
-        | "StartPlaylist"
-        | "PlayTrack"
-        | "MusicVolumeSet"
-        | "MusicVolumeChange"
-        | "Alias"
-        | "NextTrack"
-        | "PreviousTrack"
-        | "Resume"
-        | "Stop"
-        | "WhatIsTime"
-        | "Nevermind"
+    name: MessageIntent,
   }
   slots: MessageSlots;
 }
@@ -342,6 +336,8 @@ export interface MessageMisc extends MessageBase {
             | "PreviousTrack"
             | "Resume"
             | "Stop"
+            | "RestoreTracklist"
+            | "SaveTracklist"
             | "WhatIsTime"
             | "Nevermind"
             ;

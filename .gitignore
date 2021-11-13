@@ -1,5 +1,6 @@
 node_modules
 config.local.json
+cache.local.json
 .DS_Store
 itunes.sqlite3
 data/sentences.ini

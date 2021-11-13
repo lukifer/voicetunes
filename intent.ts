@@ -16,6 +16,7 @@ import {
   removeNth,
   rnd,
   wait,
+  writeCache,
 } from "./utils";
 
 const execp = promisify(exec);
@@ -31,6 +32,7 @@ import {
   MessagePlayGenre,
   MessagePlayTrack,
   MessageStartPlaylist,
+  PlayStateCache,
   SqlTrack,
   StringMap,
   StringTuple,
@@ -237,7 +239,7 @@ export async function doIntent(raw: MessageBase) {
     SFX.unrecognized();
     return err("no intent", raw);
   }
-  // const msg: Message = { ...raw, intentName: raw.intent.name };
+  // const msg: Message = { ...raw, intentName: raw.intent.name }; // FIXME
   const msg = { ...raw, intentName: raw.intent.name } as Message;
   switch(msg.intentName) {
     case "PlayAlbum":               return doPlayAlbum(msg);
@@ -252,7 +254,7 @@ export async function doIntent(raw: MessageBase) {
 
     case "Alias":
       const { text } = msg;
-      if (!ALIAS[text]) return err("no alias", msg);
+      if(!ALIAS[text]) return err("no alias", msg);
       await doIntent(await textToIntent(ALIAS[text]));
       break;
 
@@ -297,21 +299,34 @@ export async function doIntent(raw: MessageBase) {
     //   SFX.speak(log.stdout);
     //   break;
 
-    case "NextTrack":
-      await nextTrack()
+    case "RestoreTracklist":
+      const cache = readJson('cache.local.json') as PlayStateCache;
+      if(cache?.tracks?.length) {
+        await mopidy.tracklist.clear();
+        await playTracks(cache.tracks, { seekMs: cache.playbackPosition });
+      } else {
+        SFX.error();
+      }
       break;
 
-    case "PreviousTrack":
-      await previousTrack();
+    case "SaveTracklist":
+      const tracks = await mopidy.tracklist.getTracks()
+      if(tracks?.length) {
+        const pos = await mopidy.playback.getTimePosition();
+        writeCache({
+          playbackPosition: (Math.max(pos - 5000, 0)),
+          tracks,
+        });
+      }
       break;
 
-    case "Resume":
-      await mopidy.playback.resume();
-      break;
+    case "NextTrack":     return await nextTrack();
+    case "PreviousTrack": return await previousTrack();
 
-    case "Stop":
-      await mopidy.playback.pause();
-      break;
+    case "Resume": return await mopidy.playback.resume();
+    case "Stop":   return await mopidy.playback.pause();
+
+    case "Nevermind": return await SFX.ok();
 
     // case "RestartMopidy":
     //   //TODO
@@ -341,10 +356,6 @@ export async function doIntent(raw: MessageBase) {
     //   }
     //   break;
 
-    case "Nevermind":
-      SFX.ok();
-      break;
-
     default:
       // if(MQTT_PASSTHROUGH_INTENTS.includes(msg.intentName)) {
       //   mqtt(MQTT_IP).publish("voice2json", msg.toString());
@@ -369,7 +380,7 @@ async function cueRemainingTracks(tracks: string[]) {
 
 export async function playTracks(tracks: string[], opts: PlayOptions = {}) {
   const { playback, tracklist } = mopidy;
-  const { shuffle = false, queue = false } = opts;
+  const { shuffle = false, queue = false, seekMs = false } = opts;
 
   if(loadingTimer) {
     clearTimeout(loadingTimer);
@@ -380,6 +391,7 @@ export async function playTracks(tracks: string[], opts: PlayOptions = {}) {
   const start = shuffle ? rnd(tracks.length) : 0;
   if(!queue) await tracklist.clear();
   await tracklist.add({ "uris": [ `file://${PATH_MUSIC}/${tracks[start]}` ] });
+  if(seekMs) await playback.seek(seekMs);
   if(!queue) await playback.play();
   LED.stopSpin();
 
@@ -399,7 +411,7 @@ export async function playTracks(tracks: string[], opts: PlayOptions = {}) {
 export async function previousTrack() {
   const { playback } = mopidy;
   const pos = await playback.getTimePosition();
-  if (pos < PREV_TRACK_MS) {
+  if(pos < PREV_TRACK_MS) {
     await playback.previous();
   } else {
     await playback.seek(0);
@@ -412,19 +424,25 @@ export async function nextTrack() {
 
 // let cachedVolume: number | null = null;
 export async function togglePlayback() {
-  const { playback } = mopidy;
+  const { playback, tracklist } = mopidy;
   // const { mixer, playback } = mopidy;
   if("playing" === await playback.getState()) {
     //cachedVolume = await mixer.getVolume();
     //await transitionVolume(cachedVolume, 0);
     return playback.pause();
   } else {
-    //await playback.resume();
+    if(await tracklist.getLength() === 0) {
+      if(DEFAULT_ACTION) {
+        const intent = await textToIntent(DEFAULT_ACTION);
+        if(intent) doIntent(intent)
+      }
+    } else {
+      await playback.resume();
+    }
     //if(cachedVolume !== null) {
     //  await transitionVolume(await mixer.getVolume(), cachedVolume);
     //  cachedVolume = null;
     //}
-    return playback.resume();
   }
 }
 

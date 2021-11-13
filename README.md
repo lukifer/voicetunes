@@ -95,10 +95,10 @@ https://voice2json.org/formats.html#sounds-like-pronunciations`
 - Option to cache entire voice2json profile to RAM disk
 - Option to play a default command on Play and empty playlist
 - Option to restore previous state on startup
+- Local test database
 - Command: "Clear queue"
 - Command to identify current track
 - Command: "Jump to track <N>"
 - Command: "Play the <Nth> track from <album>"
 - Command: "Play <something/album> from <year>"
-- Command: "Play some <genre>"
 - Your suggestion here!

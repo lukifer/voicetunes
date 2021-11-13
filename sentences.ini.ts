@@ -86,6 +86,16 @@ previous track
 [NextTrack]
 next track
 
+[SaveTracklist]
+preserve state
+preserve track list
+save state
+save track list
+
+[RestoreTracklist]
+restore state
+restore track list
+
 [Skip]
 direction = (forward | back){direction}
 time = (0..60){time}

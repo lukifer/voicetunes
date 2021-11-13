@@ -1,5 +1,6 @@
 import * as fs from "fs";
 import { connect, MqttClient } from "mqtt";
+import { PlayStateCache } from "./types";
 
 export const rnd = (ceil: number) => Math.floor(ceil * Math.random());
 export const between = (min: number, val: number, max: number) => Math.min(max, Math.max(min, val));
@@ -11,9 +12,14 @@ export function removeNth<T>(arr: Array<T>, n: number): Array<T> {
   return [...arr.slice(0, n), ...arr.slice(n+1)];
 }
 
-export const readJson = (file: string) => fs.existsSync(file)
-  ? JSON.parse(fs.readFileSync(file, {encoding: "utf-8"}))
+export const readJson = (path: string) => fs.existsSync(path)
+  ? JSON.parse(fs.readFileSync(path, {encoding: "utf-8"}))
   : {};
+
+export const writeCache = (data: PlayStateCache) => fs.writeFileSync(
+  `${__dirname}/cache.local.json`,
+  JSON.stringify(data, undefined, 2)
+);
 
 let mqttClient: MqttClient = null;
 
