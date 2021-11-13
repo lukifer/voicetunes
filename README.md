@@ -93,6 +93,9 @@ https://voice2json.org/formats.html#sounds-like-pronunciations`
 - Migrate from iTunes JSON maps to [mopidy local](https://mopidy.com/ext/local/) library and native M3U playlists
 - Replace `exec` calls with Node sockets and pipes
 - Option to cache entire voice2json profile to RAM disk
+- Option to play a default command on Play and empty playlist
+- Option to restore previous state on startup
+- Command: "Clear queue"
 - Command to identify current track
 - Command: "Jump to track <N>"
 - Command: "Play the <Nth> track from <album>"

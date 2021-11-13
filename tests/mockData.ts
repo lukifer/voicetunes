@@ -15,6 +15,11 @@ import Mopidy from "mopidy";
 //   on: jest.fn(),
 // } as any as Partial<Mopidy>;
 
+export const allegaeonConcertoEp = [
+  `01%20Concerto%20in%20Dm.mp3`,
+  `02%20In%20Flanders%20Fields.mp3`,
+].map(mp3 => `Allegaeon/Concerto%20in%20Dm/${mp3}`);
+
 export const danseFiles = [
   `Kent/Unknown%20Album/Vy%20Ett%20Luftslott.mp3`,
   `Roxette/Unknown%20Album/The%20Look.mp3`,

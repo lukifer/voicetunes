@@ -1,10 +1,15 @@
 import Mopidy from "mopidy";
 import {doIntent, playTracks} from "../intent";
 import {wait}                 from "../utils";
+import {MessageBase}          from "../types";
 
-import {danseFiles} from "./mockData";
+import {
+  allegaeonConcertoEp,
+  danseFiles,
+} from "./mockData";
 
-jest.mock('mopidy', () => {
+jest.mock("mopidy", () => {
+  let seekPos = 0;
   (global as any).mockMopidy = {
     tracklist: {
       add:     jest.fn(),
@@ -13,6 +18,10 @@ jest.mock('mopidy', () => {
     },
     playback: {
       play: jest.fn(),
+      seek: jest.fn().mockImplementation((ms: number) => seekPos = ms),
+      next: jest.fn(),
+      previous: jest.fn(),
+      getTimePosition: jest.fn().mockImplementation(() => seekPos),
     },
     on: jest.fn(),
   } as any as Mopidy;
@@ -34,7 +43,7 @@ beforeEach(() => {
   mockMopidy.tracklist.clear.mockClear();
 });
 
-test('plays a track', async () => {
+test("plays a track", async () => {
   await playTracks(["foo.mp3"]);
   const {mockMopidy} = (global as any);
   expect(mockMopidy.tracklist.clear).toHaveBeenCalled();
@@ -42,7 +51,7 @@ test('plays a track', async () => {
   expect(mockMopidy.playback.play).toHaveBeenCalled();
 });
 
-test('queues a track', async () => {
+test("queues a track", async () => {
   await playTracks(["foo.mp3"], { queue: true });
   const {mockMopidy} = (global as any);
   expect(mockMopidy.tracklist.clear).not.toHaveBeenCalled();
@@ -60,16 +69,32 @@ test("parses a 'queue by artist' intent", async () => {
   expectTracksAdded([`${basePath}Ah%20Ha/Unknown%20Album/Take%20On%20Me.mp3`]);
 });
 
+test("parses a 'play best by artist' intent", async () => {
+  await doIntent({
+    text: "play the best of allegaeon",
+    intent: {name: "PlayArtistBest"},
+    slots: {artist: "allegaeon", playaction: "play"},
+  });
+  const {mockMopidy} = (global as any);
+
+  const allTracks = mockMopidy.tracklist.add.mock.calls.reduce(
+      (all: string[], calls: {uris: string[]}[]) => ([
+      ...all,
+      ...calls[0].uris,
+    ]), [] as string[]
+  );
+  const testFiles = allegaeonConcertoEp.map(mp3 => `${basePath}${mp3}`);
+  expect(allTracks.includes(testFiles[0])).toBeTruthy();
+  expect(allTracks.includes(testFiles[1])).toBeFalsy();
+});
+
 test("parses a 'play nth album by artist' intent", async () => {
   await doIntent({
     text: "play seventh album by allegaeon",
     intent: {name: "PlayArtistAlbumByNumber"},
     slots: {artist: "allegaeon", albumnum: "seventh"},
   });
-  const testFiles = [
-    `01%20Concerto%20in%20Dm.mp3`,
-    `02%20In%20Flanders%20Fields.mp3`,
-  ].map(mp3 => `${basePath}Allegaeon/Concerto%20in%20Dm/${mp3}`);
+  const testFiles = allegaeonConcertoEp.map(mp3 => `${basePath}${mp3}`);
   await wait(300);
   for (const file of testFiles) expectTracksAdded([ file ]);
 });
@@ -158,4 +183,36 @@ test("parses a 'play track' intent", async () => {
     });
     expectTracksAdded([`${basePath}${file}`]);
   })
+});
+
+test("parses a 'play genre' intent", async () => {
+  await doIntent({
+    text: "play some blues",
+    intent: {name: "PlayGenre"},
+    slots: {genre: "blues", playlistaction: "play"},
+  });
+  expectTracksAdded([`${basePath}Ray%20Charles/Unknown%20Album/Shake%20Your%20Tailfeathers.mp3`]);
+});
+
+test("previous track returns to start of track after a cutoff", async () => {
+  await playTracks(["foo.mp3", "bar.mp3"]);
+  const {mockMopidy} = (global as any);
+  const {playback} = mockMopidy;
+
+  const prevTrackIntent: MessageBase = {
+    text: "previous track",
+    intent: {name: "PreviousTrack"},
+    slots: {},
+  };
+
+  await playback.seek(5 * 1000);
+  const pos = await playback.getTimePosition();
+  expect(pos).toEqual(5 * 1000);
+
+  await doIntent(prevTrackIntent);
+  expect(playback.previous).toHaveBeenCalled();
+
+  await playback.seek(60 * 1000);
+  await doIntent(prevTrackIntent);
+  expect(playback.seek).toHaveBeenCalledWith(0);
 });

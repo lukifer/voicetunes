@@ -24,6 +24,7 @@ async function go() {
   const artistKeys   = await get("artists");
   const playlistKeys = await get("playlists");
   const trackKeys    = await get("tracks");
+  const genreKeys    = await get("genres");
 
   const sentences_ini = `
 
@@ -49,6 +50,18 @@ albumnum = (${ordinalWordsJson.map((x: string[]) => x[1]).join(" | ")}){albumnum
 <PlayTrack.playaction> [the] <albumnum> <PlayArtist.artist> album
 
 [PlayAlbum]
+<PlayTrack.playaction> [the] album <album>
+album = (${albumKeys.join(" | ")}){album}
+
+[PlayGenre]
+genre = (${genreKeys.join(" | ")}){genre}
+<PlayTrack.playaction> some <genre>
+<PlayTrack.playaction> genre <genre>
+
+[PlayGenreBest]
+<PlayTrack.playaction> [the] best [of] [genre] <PlayGenre.genre>
+<PlayTrack.playaction> some (great | awesome) <PlayGenre.genre>
+
 <PlayTrack.playaction> [the] album <album>
 album = (${albumKeys.join(" | ")}){album}
 

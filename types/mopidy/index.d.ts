@@ -14,12 +14,14 @@ declare module "mopidy" {
       setVolume: (volume: number[]) => Promise<void>,
     };
     playback: {
-      getState: () => Promise<string>
-      pause:    () => Promise<void>,
-      play:     () => Promise<void>,
-      previous: () => Promise<void>,
-      next:     () => Promise<void>,
-      resume:   () => Promise<void>,
+      getState:        ()            => Promise<string>
+      pause:           ()            => Promise<void>,
+      play:            ()            => Promise<void>,
+      previous:        ()            => Promise<void>,
+      next:            ()            => Promise<void>,
+      resume:          ()            => Promise<void>,
+      seek:            (pos: number) => Promise<void>,
+      getTimePosition: ()            => Promise<number>,
     };
     tracklist: {
       add:       (args: addArgs)  => Promise<void>,

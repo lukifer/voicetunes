@@ -11,6 +11,8 @@ import config        from "./config";
 import {
   changeVol,
   doIntent,
+  previousTrack,
+  nextTrack,
   togglePlayback,
 } from "./intent";
 
@@ -42,8 +44,8 @@ mopidy.on("state:online", async () => {
     UP:    () => changeVol( 10),
     DOWN:  () => changeVol(-10),
 
-    LEFT:  async () => await mopidy.playback.previous(),
-    RIGHT: async () => await mopidy.playback.next(),
+    LEFT:  async () => await previousTrack(),
+    RIGHT: async () => await nextTrack(),
     PLAY:  async () => await togglePlayback(),
 
     LISTEN_START: async () => startListening(),

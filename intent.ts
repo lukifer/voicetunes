@@ -11,7 +11,7 @@ import { dbQuery } from "./db";
 import {
   arrayWrap,
   between,
-  mqtt,
+  // mqtt,
   readJson,
   removeNth,
   rnd,
@@ -28,6 +28,7 @@ import {
   MessagePlayArtist,
   MessagePlayArtistAlbumByNumber,
   MessagePlayRandomAlbumByArtist,
+  MessagePlayGenre,
   MessagePlayTrack,
   MessageStartPlaylist,
   SqlTrack,
@@ -37,10 +38,14 @@ import {
 
 const {
   ALIAS,
+  DEFAULT_ACTION,
   MAX_QUEUED_TRACKS,
-  MQTT_IP,
-  MQTT_PASSTHROUGH_INTENTS,
+  // MQTT_IP,
+  // MQTT_PASSTHROUGH_INTENTS,
   PATH_MUSIC,
+  MIN_RATING,
+  MIN_RATING_BEST,
+  PREV_TRACK_MS,
   USE_LED,
 } = config;
 
@@ -81,15 +86,16 @@ export async function textToIntent(text: string): Promise<Message> {
   }
 }
 
-async function doPlayArtist(msg: MessagePlayArtist) {
+async function doPlayArtist(msg: MessagePlayArtist, best: boolean = false) {
   const { slots } = msg;
   const queue = slots.playaction === "queue";
   if(!slots?.artist) return err("no artist", msg);
+  const minRating = best ? MIN_RATING_BEST : MIN_RATING;
   const artistTracks = await dbQuery(sql`
     SELECT t.location
     FROM vox_artists va
     INNER JOIN tracks t ON va.artist = t.artist
-    WHERE va.sentence = ${slots.artist} AND t.rating >= 80
+    WHERE va.sentence = ${slots.artist} AND t.rating >= ${minRating}
   `) as SqlTrack[];
   if(!artistTracks?.length) {
     return err("no tracks", msg);
@@ -164,6 +170,24 @@ export async function doPlayAlbum(msg: MessagePlayAlbum) {
   }
 }
 
+export async function doPlayGenre(msg: MessagePlayGenre, best: boolean = false) {
+  const { slots } = msg;
+  const queue = slots.playaction === "queue";
+  const minRating = best ? MIN_RATING_BEST : MIN_RATING;
+  const genreTracks = await dbQuery(sql`
+    SELECT t.location
+    FROM vox_genres vg
+    INNER JOIN tracks t ON vg.genre = t.genre
+    WHERE vg.sentence = ${slots.genre} AND t.rating >= ${minRating}
+  `) as SqlTrack[];
+  if(!genreTracks?.length) {
+    return err(`no tracks found for genre ${slots.genre}`, msg);
+  } else {
+    // FIXME: handle multiple albums with the same name
+    await playTracks(trackLocations(genreTracks), { queue });
+  }
+}
+
 export async function doStartPlaylist(msg: MessageStartPlaylist) {
   const { slots } = msg;
   const { playlistaction } = slots;
@@ -213,27 +237,23 @@ export async function doIntent(raw: MessageBase) {
     SFX.unrecognized();
     return err("no intent", raw);
   }
+  // const msg: Message = { ...raw, intentName: raw.intent.name };
   const msg = { ...raw, intentName: raw.intent.name } as Message;
   switch(msg.intentName) {
-    case "PlayArtist":              return doPlayArtist(msg);
-    case "PlayRandomAlbumByArtist": return doPlayRandomAlbumByArtist(msg);
-    case "PlayArtistAlbumByNumber": return doPlayArtistAlbumByNumber(msg);
     case "PlayAlbum":               return doPlayAlbum(msg);
+    case "PlayArtist":              return doPlayArtist(msg);
+    case "PlayArtistBest":          return doPlayArtist(msg, true);
+    case "PlayArtistAlbumByNumber": return doPlayArtistAlbumByNumber(msg);
+    case "PlayGenre":               return doPlayGenre(msg);
+    case "PlayGenreBest":           return doPlayGenre(msg, true);
+    case "PlayRandomAlbumByArtist": return doPlayRandomAlbumByArtist(msg);
     case "StartPlaylist":           return doStartPlaylist(msg);
     case "PlayTrack":               return doPlayTrack(msg);
 
-    // case "PlayArtistBest":
-    // // TODO
-    // //   if(BEST_TRACKS_PLAYLIST) {
-    // //     const playlistFiles = playlistTracksMap[BEST_TRACKS_PLAYLIST];
-    // //     const bestTracks = playlistFiles.filter(({ artist }) => artist === slots.artist)
-    // //     playTracks(bestTracks.map(({ file }) => file), { shuffle: true, queue });
-    // //     break;
-    // //   }
-
     case "Alias":
-      if (!ALIAS[msg?.text]) return err("no alias", msg);
-      await doIntent(await textToIntent(ALIAS[msg.text]));
+      const { text } = msg;
+      if (!ALIAS[text]) return err("no alias", msg);
+      await doIntent(await textToIntent(ALIAS[text]));
       break;
 
     case "MusicVolumeSet":
@@ -278,11 +298,11 @@ export async function doIntent(raw: MessageBase) {
     //   break;
 
     case "NextTrack":
-      await mopidy.playback.next();
+      await nextTrack()
       break;
 
     case "PreviousTrack":
-      await mopidy.playback.previous();
+      await previousTrack();
       break;
 
     case "Resume":
@@ -326,12 +346,12 @@ export async function doIntent(raw: MessageBase) {
       break;
 
     default:
-      if(MQTT_PASSTHROUGH_INTENTS.includes(msg.intentName)) {
-        mqtt(MQTT_IP).publish("voice2json", msg.toString());
-      } else {
-        LED.flashErr();
-        return err("command unrecognized", msg);
-      }
+      // if(MQTT_PASSTHROUGH_INTENTS.includes(msg.intentName)) {
+      //   mqtt(MQTT_IP).publish("voice2json", msg.toString());
+      // } else {
+      //   LED.flashErr();
+      //   return err("command unrecognized", msg);
+      // }
   }
 }
 
@@ -374,6 +394,20 @@ export async function playTracks(tracks: string[], opts: PlayOptions = {}) {
       await cueRemainingTracks(remainingTracks.slice(0, picks));
     }
   }
+}
+
+export async function previousTrack() {
+  const { playback } = mopidy;
+  const pos = await playback.getTimePosition();
+  if (pos < PREV_TRACK_MS) {
+    await playback.previous();
+  } else {
+    await playback.seek(0);
+  }
+}
+
+export async function nextTrack() {
+  await mopidy.playback.next();
 }
 
 // let cachedVolume: number | null = null;

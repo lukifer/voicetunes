@@ -220,6 +220,7 @@ export interface MessageSlots {
   albumnum?:       string;
   artist?:         string;
   direction?:      "down" | "up";
+  genre?:          string;
   playaction?:     "play" | "queue";
   playlist?:       string;
   playlistaction?: string;
@@ -227,11 +228,11 @@ export interface MessageSlots {
   volume?:         number;
 }
 
-export type Message = MessagePlayArtistBest
-                    | MessagePlayArtist
+export type Message = MessagePlayArtist
                     | MessagePlayArtistAlbumByNumber
                     | MessagePlayRandomAlbumByArtist
                     | MessagePlayAlbum
+                    | MessagePlayGenre
                     | MessagePlayTrack
                     | MessageStartPlaylist
                     | MessageMusicVolumeSet
@@ -247,23 +248,21 @@ export interface MessageBase {
         | "PlayRandomAlbumByArtist"
         | "PlayArtistAlbumByNumber"
         | "PlayAlbum"
+        | "PlayGenre"
+        | "PlayGenreBest"
         | "StartPlaylist"
         | "PlayTrack"
         | "MusicVolumeSet"
         | "MusicVolumeChange"
         | "Alias"
+        | "NextTrack"
+        | "PreviousTrack"
+        | "Resume"
+        | "Stop"
+        | "WhatIsTime"
         | "Nevermind"
   }
-  slots: object;
-}
-
-export interface MessagePlayArtistBest extends MessageBase {
-  intentName: "PlayArtistBest";
-  // playaction: "shuffle" | "play",
-  // playlistaction: "play" | "shuffle" | "queueshuffle",
-  slots: {
-    artist: string;
-  }
+  slots: MessageSlots;
 }
 
 export interface MessagePlayArtist extends MessageBase {
@@ -285,7 +284,7 @@ export interface MessagePlayRandomAlbumByArtist extends MessageBase {
 export interface MessagePlayArtistAlbumByNumber extends MessageBase {
   intentName: "PlayArtistAlbumByNumber";
   slots: {
-    albumnum: number;
+    albumnum: string; // "seventh", not 7
     artist: string;
     playaction: "play" | "queue",
   }
@@ -311,6 +310,14 @@ export interface MessagePlayTrack extends MessageBase {
   intentName: "PlayTrack";
   slots: {
     track: string;
+    playaction: "play" | "queue";
+  }
+}
+
+export interface MessagePlayGenre extends MessageBase {
+  intentName: "PlayGenre" | "PlayGenreBest";
+  slots: {
+    genre: string;
     playaction: "play" | "queue";
   }
 }
