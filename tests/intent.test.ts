@@ -14,6 +14,7 @@ jest.mock("mopidy", () => {
     tracklist: {
       add:     jest.fn(),
       clear:   jest.fn(),
+      index:   jest.fn(() => 0),
       shuffle: jest.fn(),
     },
     playback: {
@@ -197,7 +198,7 @@ test("parses a 'play genre' intent", async () => {
 test("previous track returns to start of track after a cutoff", async () => {
   await playTracks(["foo.mp3", "bar.mp3"]);
   const {mockMopidy} = (global as any);
-  const {playback} = mockMopidy;
+  const {playback, tracklist} = mockMopidy;
 
   const prevTrackIntent: MessageBase = {
     text: "previous track",
@@ -205,14 +206,21 @@ test("previous track returns to start of track after a cutoff", async () => {
     slots: {},
   };
 
+  // 1st track, pre-cutoff: seek to start
   await playback.seek(5 * 1000);
-  const pos = await playback.getTimePosition();
-  expect(pos).toEqual(5 * 1000);
+  expect(await playback.getTimePosition()).toEqual(5 * 1000);
+  mockMopidy.playback.seek.mockClear();
+  await doIntent(prevTrackIntent);
+  expect(playback.seek).toHaveBeenCalledWith([0]);
 
+  // 2nd track, pre-cutoff: go to previous
+  tracklist.index = jest.fn().mockImplementation(() => 1);
+  await playback.seek(5 * 1000);
   await doIntent(prevTrackIntent);
   expect(playback.previous).toHaveBeenCalled();
 
+  // 2nd track, post-cutoff: seek to start
   await playback.seek(60 * 1000);
   await doIntent(prevTrackIntent);
-  expect(playback.seek).toHaveBeenCalledWith(0);
+  expect(playback.seek).toHaveBeenCalledWith([0]);
 });

@@ -2,6 +2,32 @@ declare module "mopidy" {
   type addArgs = {
     uris: string[];
   };
+
+  type MopidyArtist = {
+    name: string;
+  }
+
+  type MopidyAlbum = {
+    name: string;
+    artists: MopidyArtist[];
+    num_tracks: number,
+    num_discs: number,
+    date: string,
+  }
+
+  type MopidyTrack = {
+    uri: string;
+    name: string;
+    artists: MopidyArtist[];
+    album?: MopidyAlbum;
+    genre?: string;
+    track_no?: number;
+    disc_no?: number;
+    date?: string;
+    length: number;
+    comment?: string;
+  };
+
   type constructorArgs = {
     webSocketUrl: string;
   }
@@ -14,20 +40,20 @@ declare module "mopidy" {
       setVolume: (volume: number[]) => Promise<void>,
     };
     playback: {
-      getState:        ()            => Promise<string>
-      pause:           ()            => Promise<void>,
-      play:            ()            => Promise<void>,
-      previous:        ()            => Promise<void>,
-      next:            ()            => Promise<void>,
-      resume:          ()            => Promise<void>,
-      seek:            (pos: number) => Promise<void>,
-      getTimePosition: ()            => Promise<number>,
+      getState:        ()              => Promise<string>
+      pause:           ()              => Promise<void>,
+      play:            ()              => Promise<void>,
+      previous:        ()              => Promise<void>,
+      next:            ()              => Promise<void>,
+      resume:          ()              => Promise<void>,
+      seek:            (pos: number[]) => Promise<void>,
+      getTimePosition: ()              => Promise<number>,
     };
     tracklist: {
       add:       (args: addArgs)  => Promise<void>,
       clear:     ()               => Promise<void>,
       shuffle:   (args: number[]) => Promise<void>,
-      getTracks: ()               => Promise<string[]>,
+      getTracks: ()               => Promise<MopidyTrack[]>,
       getLength: ()               => Promise<number>,
       index:     ()               => Promise<number>,
     };

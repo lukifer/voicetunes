@@ -28,8 +28,7 @@ const configDefaults = {
   DENOISE_BIN: "",
   DENOISE_SOX: false as boolean | number,
   EXCLUDE_GENRES: null,
-  FILE_EXTENSIONS: ['mp3', 'm4a'],
-  FILTER_ARTISTS_BY_PLAYLISTS: null,
+  FILE_EXTENSIONS: ["mp3", "m4a", "wav", "aiff", "flac", "alac"],
   FILTER_DENY: {
     albums: [],
     artists: [],
@@ -44,7 +43,6 @@ const configDefaults = {
     playlists: [],
     tracks: [],
   },
-  FILTER_TRACKS_BY_PLAYLISTS: null,
   KEY_UP: 233,
   KEY_DOWN: 234,
   KEY_LEFT: 182,

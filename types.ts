@@ -194,6 +194,7 @@ export type EntityFilter = Required<Record<EntityFilterType, string[]>>
 export type LedPixel = [number, number, number];
 
 export type PlayStateCache = {
+  index: number;
   playbackPosition: number;
   tracks: string[];
 };
@@ -202,6 +203,7 @@ export interface PlayOptions {
   shuffle?: boolean;
   queue?: boolean;
   seekMs?: number;
+  jumpTo?: number;
 }
 
 export interface MessageSlots {

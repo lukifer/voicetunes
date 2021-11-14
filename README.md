@@ -6,6 +6,7 @@ Rather than using a wake-word (which has a delay, and might result in false posi
 ## Example Voice Commands
 
 - "Play something by \<artist\>"
+- "Play some \<genre\>"
 - "Play song \<trackname\>"
 - "Play track \<trackname\> by \<artist\>"
 - "Play album \<album\>"
@@ -14,7 +15,7 @@ Rather than using a wake-word (which has a delay, and might result in false posi
 - "Start playlist \<playlist\>"
 - "Shuffle playlist \<playlist\>"
 
-See `itunes/sentences.ini.ts` for the full list of grammars, in the simplified [JSGF](https://voice2json.org/sentences.html) format.
+See `sentences.ini.ts` for the full list of grammars, in the simplified [JSGF](https://voice2json.org/sentences.html) format.
 
 # Raspberry Pi Install
 
@@ -68,20 +69,20 @@ apt install log2ram
 
 ## iTunes / Music.app Library
 
-This was built to export from a iTunes/Music.app library, and has a script to convert the iTunes XML to JSON maps. See `maps_example` and `itunes/types.ts` for the file formats, if you want to compile music from a different source.
+This was built to export from a iTunes/Music.app library, and has a script to convert the iTunes XML to JSON maps. See `maps_example` and `types.ts` for the file formats, if you want to compile music from a different source.
 
 Music.app in Catalina / Big Sur no longer exports the Library XML automatically. You can hand-export from `File -> Library -> Export Library`, or run the included AppleScript:
 
 ```
-osascript itunes/exportlibrary.applescript
+osascript exportlibrary.applescript
 ```
 
 To sync music to your Pi (after this package has been installed and setup), run the following:
 
 ```
 git clone https://github.com/lukifer/voicetunes.git
-cd voicetunes/itunes
-./itunes/build.sh pi@raspberrypi.local:/home/pi/voicetunes
+cd voicetunes
+./build.sh pi@raspberrypi.local:/home/pi/voicetunes
 
 rsync -az ~/Music/iTunes/iTunes\ Media/Music/ pi@raspberrypi.local:/home/pi/music/
 ```
@@ -90,15 +91,16 @@ https://voice2json.org/formats.html#sounds-like-pronunciations`
 
 # TODO
 
-- Migrate from iTunes JSON maps to [mopidy local](https://mopidy.com/ext/local/) library and native M3U playlists
-- Replace `exec` calls with Node sockets and pipes
-- Option to cache entire voice2json profile to RAM disk
-- Option to play a default command on Play and empty playlist
-- Option to restore previous state on startup
-- Local test database
 - Command: "Clear queue"
 - Command to identify current track
-- Command: "Jump to track <N>"
-- Command: "Play the <Nth> track from <album>"
-- Command: "Play <something/album> from <year>"
+- Command: "Jump to track \<N\>"
+- Command: "Play the \<Nth\> track from \<album\>"
+- Command: "Play something/\<album\> from \<year\>/\<decade\>"
+- Command: "Play the latest album by \<artist>\"
+- Local test database
+- Replace `exec` calls with Node sockets and pipes
+- Option to use [mopidy local](https://mopidy.com/ext/local/) library and native M3U playlists
+- Option to cache entire voice2json profile to RAM disk
+- Option to cache entire SQLite db to RAM disk
+- Option to restore previous state on startup
 - Your suggestion here!

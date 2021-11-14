@@ -49,6 +49,8 @@ const {
   MIN_RATING_BEST,
   PREV_TRACK_MS,
   USE_LED,
+  VOICE2JSON_BIN,
+  VOICE2JSON_PROFILE,
 } = config;
 
 const ord = readJson("./data/ordinalWords.json");
@@ -61,28 +63,40 @@ const ordinalToNum =
 const trackLocations = (files: SqlTrack[]) => files.map(x => x.location.split("/iTunes%20Media/Music/")[1] || "")
 
 let cachedIntents: {[text: string]: Message} = {};
-export async function textToIntent(text: string): Promise<Message> {
+export async function textToIntent(text: string): Promise<Message | null> {
   //console.log("textToIntent", text, "cached="+(!!cachedIntents[text]));
   if(!cachedIntents[text]) {
-    var recognizeProc = spawn("voice2json", [
-      "recognize-intent",
-      "--replace-numbers",
-      "--text-input",
-    ]);
-    return new Promise((resolve, reject) => {
-      recognizeProc.stdout.on("data", (messageJson) => {
-        //console.log("messageJson", messageJson.toString());
-        try {
-          const message = JSON.parse(messageJson.toString()) as Message;
-          cachedIntents[text] = message as Message;
-          resolve(message as Message);
-        } catch(err) {
-          reject(err);
-        }
-      });
-      recognizeProc.stdin.write(text);
-      recognizeProc.stdin.end();
-    });
+    const { stdout } = await execp([
+      `echo '${text}'`,
+      `${VOICE2JSON_BIN} --profile ${VOICE2JSON_PROFILE} recognize-intent --text-input --replace-numbers`,
+    ].join(" | "));
+
+    try {
+      cachedIntents[text] = JSON.parse(stdout) as Message;
+      return cachedIntents[text];
+    } catch(err: any) {
+      return null;
+    }
+
+    // var recognizeProc = spawn("voice2json", [
+    //   "recognize-intent",
+    //   "--replace-numbers",
+    //   "--text-input",
+    // ]);
+    // return new Promise((resolve, reject) => {
+    //   recognizeProc.stdout.on("data", (messageJson) => {
+    //     //console.log("messageJson", messageJson.toString());
+    //     try {
+    //       const message = JSON.parse(messageJson.toString()) as Message;
+    //       cachedIntents[text] = message as Message;
+    //       resolve(message as Message);
+    //     } catch(err) {
+    //       reject(err);
+    //     }
+    //   });
+    //   recognizeProc.stdin.write(text);
+    //   recognizeProc.stdin.end();
+    // });
   } else {
     return cachedIntents[text] as Message;
   }
@@ -186,7 +200,7 @@ export async function doPlayGenre(msg: MessagePlayGenre, best: boolean = false) 
     return err(`no tracks found for genre ${slots.genre}`, msg);
   } else {
     // FIXME: handle multiple albums with the same name
-    await playTracks(trackLocations(genreTracks), { queue });
+    await playTracks(trackLocations(genreTracks), { shuffle: true, queue });
   }
 }
 
@@ -242,20 +256,36 @@ export async function doIntent(raw: MessageBase) {
   // const msg: Message = { ...raw, intentName: raw.intent.name }; // FIXME
   const msg = { ...raw, intentName: raw.intent.name } as Message;
   switch(msg.intentName) {
-    case "PlayAlbum":               return doPlayAlbum(msg);
-    case "PlayArtist":              return doPlayArtist(msg);
-    case "PlayArtistBest":          return doPlayArtist(msg, true);
-    case "PlayArtistAlbumByNumber": return doPlayArtistAlbumByNumber(msg);
-    case "PlayGenre":               return doPlayGenre(msg);
-    case "PlayGenreBest":           return doPlayGenre(msg, true);
-    case "PlayRandomAlbumByArtist": return doPlayRandomAlbumByArtist(msg);
-    case "StartPlaylist":           return doStartPlaylist(msg);
-    case "PlayTrack":               return doPlayTrack(msg);
+    case "PlayAlbum":               return await doPlayAlbum(msg);
+    case "PlayArtist":              return await doPlayArtist(msg);
+    case "PlayArtistBest":          return await doPlayArtist(msg, true);
+    case "PlayArtistAlbumByNumber": return await doPlayArtistAlbumByNumber(msg);
+    case "PlayGenre":               return await doPlayGenre(msg);
+    case "PlayGenreBest":           return await doPlayGenre(msg, true);
+    case "PlayRandomAlbumByArtist": return await doPlayRandomAlbumByArtist(msg);
+    case "StartPlaylist":           return await doStartPlaylist(msg);
+    case "PlayTrack":               return await doPlayTrack(msg);
+
+    case "RestoreTracklist": return await doRestoreState();
+    case "SaveTracklist":    return await doSaveState();
+
+    case "NextTrack":     return await nextTrack();
+    case "PreviousTrack": return await previousTrack();
+
+    case "Resume": return await mopidy.playback.resume();
+    case "Stop":   return await mopidy.playback.pause();
+
+    case "Nevermind": return await SFX.ok();
 
     case "Alias":
       const { text } = msg;
       if(!ALIAS[text]) return err("no alias", msg);
-      await doIntent(await textToIntent(ALIAS[text]));
+      const aliasedIntent = await textToIntent(ALIAS[text]);
+      if(aliasedIntent) {
+        await doIntent(aliasedIntent);
+      } else {
+        SFX.error();
+      }
       break;
 
     case "MusicVolumeSet":
@@ -299,35 +329,6 @@ export async function doIntent(raw: MessageBase) {
     //   SFX.speak(log.stdout);
     //   break;
 
-    case "RestoreTracklist":
-      const cache = readJson('cache.local.json') as PlayStateCache;
-      if(cache?.tracks?.length) {
-        await mopidy.tracklist.clear();
-        await playTracks(cache.tracks, { seekMs: cache.playbackPosition });
-      } else {
-        SFX.error();
-      }
-      break;
-
-    case "SaveTracklist":
-      const tracks = await mopidy.tracklist.getTracks()
-      if(tracks?.length) {
-        const pos = await mopidy.playback.getTimePosition();
-        writeCache({
-          playbackPosition: (Math.max(pos - 5000, 0)),
-          tracks,
-        });
-      }
-      break;
-
-    case "NextTrack":     return await nextTrack();
-    case "PreviousTrack": return await previousTrack();
-
-    case "Resume": return await mopidy.playback.resume();
-    case "Stop":   return await mopidy.playback.pause();
-
-    case "Nevermind": return await SFX.ok();
-
     // case "RestartMopidy":
     //   //TODO
     //   break;
@@ -368,31 +369,39 @@ export async function doIntent(raw: MessageBase) {
 
 let loadingTimer: ReturnType<typeof setTimeout> | null = null;
 
-async function cueRemainingTracks(tracks: string[]) {
+async function queueRemainingTracks(tracks: string[]) {
   const batch = 5;
   const { tracklist } = mopidy;
   await tracklist.add({ uris: tracks.slice(0, batch).map(file => `file://${PATH_MUSIC}/${file}`) });
   if(tracks.length > batch) {
     await wait(250);
-    await cueRemainingTracks(tracks.slice(batch));
+    await queueRemainingTracks(tracks.slice(batch));
   }
 }
 
 export async function playTracks(tracks: string[], opts: PlayOptions = {}) {
   const { playback, tracklist } = mopidy;
-  const { shuffle = false, queue = false, seekMs = false } = opts;
+  const {
+    // jumpTo = 0, // TODO
+    queue = false,
+    seekMs = false,
+    shuffle = false,
+  } = opts;
 
   if(loadingTimer) {
     clearTimeout(loadingTimer);
     loadingTimer = null;
   }
 
-  // cue a random track and start playing immediately
+  // queue a random track and start playing immediately
   const start = shuffle ? rnd(tracks.length) : 0;
   if(!queue) await tracklist.clear();
   await tracklist.add({ "uris": [ `file://${PATH_MUSIC}/${tracks[start]}` ] });
-  if(seekMs) await playback.seek(seekMs);
-  if(!queue) await playback.play();
+  if(seekMs) await playback.seek([seekMs]);
+  if(!queue) {
+    // if(jumpTo === 0) await playback.play();
+    await playback.play();
+  }
   LED.stopSpin();
 
   // then add the remainder asynchronously (shuffling if needed)
@@ -401,20 +410,48 @@ export async function playTracks(tracks: string[], opts: PlayOptions = {}) {
   if(picks) {
     if(shuffle) {
       const shuffled = Shuffler.pick(remainingTracks, { picks });
-      await cueRemainingTracks(arrayWrap(shuffled));
+      await queueRemainingTracks(arrayWrap(shuffled));
     } else {
-      await cueRemainingTracks(remainingTracks.slice(0, picks));
+      await queueRemainingTracks(remainingTracks.slice(0, picks));
     }
   }
 }
 
+export async function doRestoreState() {
+  const { tracklist } = mopidy;
+  const cache = readJson('cache.local.json') as PlayStateCache;
+  if(cache?.tracks?.length) {
+    await tracklist.clear();
+    await playTracks(cache.tracks, {
+      jumpTo: cache.index,
+      seekMs: cache.playbackPosition,
+    });
+  } else {
+    SFX.error();
+  }
+}
+
+export async function doSaveState() {
+  const { tracklist } = mopidy;
+  const tracks = await tracklist.getTracks()
+  if(tracks?.length) {
+    const pos = await mopidy.playback.getTimePosition();
+    writeCache({
+      index: await tracklist.index(),
+      playbackPosition: (Math.max(pos - 5000, 0)),
+      tracks: tracks.map(t => t.uri),
+    });
+  }
+}
+
 export async function previousTrack() {
-  const { playback } = mopidy;
+  const { playback, tracklist } = mopidy;
   const pos = await playback.getTimePosition();
-  if(pos < PREV_TRACK_MS) {
+  const idx = await tracklist.index();
+  if(pos < PREV_TRACK_MS && idx > 0) {
     await playback.previous();
   } else {
-    await playback.seek(0);
+    await playback.seek([0]);
   }
 }
 
