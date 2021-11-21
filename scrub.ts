@@ -5,6 +5,7 @@ import {
   StringReplaceTuple,
   ArtistSentence,
   AlbumSentence,
+  GenreSentence,
   TrackSentence,
   EntityFilterType,
   EntityFilter,
@@ -104,6 +105,11 @@ export function scrubAlbumName(albumName: string): AlbumSentence {
     .replace( /[0-9]+/g, numberWords)
     .replace(/\s+/g, " ")
     .trim()
+}
+
+export function scrubGenre(genreName: string): GenreSentence {
+  const genreLower = (substitutions.genres[genreName] || genreName).toLowerCase();
+  return scrub(genreLower).trim();
 }
 
 export const entityFilter = (entity: string, entityType: EntityFilterType) => {

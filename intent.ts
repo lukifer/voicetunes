@@ -3,11 +3,16 @@ import { exec, spawn } from "child_process";
 import { promisify }   from "util";
 import { sql }         from '@databases/sqlite';
 
-import config      from "./config";
-import { mopidy }  from "./index";
-import * as LED    from "./led";
-import SFX         from "./sfx";
-import { dbQuery } from "./db";
+import config     from "./config";
+import { mopidy } from "./index";
+import * as LED   from "./led";
+import SFX        from "./sfx";
+
+import {
+  dbQuery,
+  dbRawValue,
+} from "./db";
+
 import {
   arrayWrap,
   between,
@@ -32,9 +37,9 @@ import {
   MessagePlayGenre,
   MessagePlayTrack,
   MessageStartPlaylist,
+  NumberMap,
   PlayStateCache,
   SqlTrack,
-  StringMap,
   StringTuple,
 } from "./types";
 
@@ -54,11 +59,11 @@ const {
 } = config;
 
 const ord = readJson("./data/ordinalWords.json");
-const ordinalToNum =
-  ord.reduce((acc: StringMap, x: StringTuple) => ({
+const ordinalToNum: NumberMap =
+  ord.reduce((acc: NumberMap, x: StringTuple) => ({
     ...acc,
     [x[1]]: parseInt(x[0]) - 1,
-  }), {} as StringMap);
+  }), {} as NumberMap);
 
 const trackLocations = (files: SqlTrack[]) => files.map(x => x.location.split("/iTunes%20Media/Music/")[1] || "")
 
@@ -143,9 +148,10 @@ async function doPlayRandomAlbumByArtist(msg: MessagePlayRandomAlbumByArtist) {
 
 async function doPlayArtistAlbumByNumber(msg: MessagePlayArtistAlbumByNumber) {
   const { slots } = msg;
-  const queue = slots.playaction === "queue";
   if(!slots?.albumnum || !slots?.artist) return err("no artist or album number", msg);
+  const queue = slots.playaction === "queue";
   const albumIndex = ordinalToNum[slots.albumnum] || 0;
+  const direction = dbRawValue(slots.albumnum === "latest" ? "DESC" : "ASC");
   const albumNumTracks = await dbQuery(sql`
     SELECT tracks.location
     FROM tracks
@@ -153,9 +159,12 @@ async function doPlayArtistAlbumByNumber(msg: MessagePlayArtistAlbumByNumber) {
       SELECT t.album, IFNULL(t.album_artist, t.artist) as album_artist
       FROM vox_artists va
       INNER JOIN tracks t ON va.artist = IFNULL(t.album_artist, t.artist)
-      WHERE va.sentence = ${slots.artist} AND album IS NOT NULL AND year IS NOT NULL
+      WHERE va.sentence = ${slots.artist}
+        AND t.album IS NOT NULL
+        AND t.year IS NOT NULL
+        AND t.compilation IS NULL
       GROUP BY t.album, t.year
-      ORDER BY t.year ASC
+      ORDER BY t.year ${direction}
       LIMIT 1 OFFSET ${albumIndex}
     ) as a ON a.album = tracks.album AND a.album_artist = IFNULL(tracks.album_artist, tracks.artist)
     ORDER BY tracks.disc_number ASC, tracks.track_number ASC
@@ -210,7 +219,7 @@ export async function doStartPlaylist(msg: MessageStartPlaylist) {
   if(!slots?.playlist) return err("no playlist", msg);
   const shuffle = (playlistaction === "shuffle");
   const orderBy = shuffle
-    ? sql.__dangerous__rawValue("ORDER BY RANDOM()")
+    ? dbRawValue("ORDER BY RANDOM()")
     : sql`ORDER BY ${sql.ident("pi", "pos")}`;
   const playlistTracks = await dbQuery(sql`
     SELECT t.location
@@ -382,7 +391,7 @@ async function queueRemainingTracks(tracks: string[]) {
 export async function playTracks(tracks: string[], opts: PlayOptions = {}) {
   const { playback, tracklist } = mopidy;
   const {
-    // jumpTo = 0, // TODO
+    jumpTo = 0,
     queue = false,
     seekMs = false,
     shuffle = false,
@@ -393,26 +402,30 @@ export async function playTracks(tracks: string[], opts: PlayOptions = {}) {
     loadingTimer = null;
   }
 
-  // queue a random track and start playing immediately
-  const start = shuffle ? rnd(tracks.length) : 0;
+  // queue starting track (random or specific) and start playing immediately
+  const playIdx = shuffle ? rnd(tracks.length) : jumpTo;
   if(!queue) await tracklist.clear();
-  await tracklist.add({ "uris": [ `file://${PATH_MUSIC}/${tracks[start]}` ] });
+  await tracklist.add({ "uris": [ `file://${PATH_MUSIC}/${tracks[playIdx]}` ] });
   if(seekMs) await playback.seek([seekMs]);
   if(!queue) {
-    // if(jumpTo === 0) await playback.play();
     await playback.play();
+  }
+  if(jumpTo > 0) {
+    await tracklist.add({ uris: tracks.slice(0, jumpTo), at_position: 0 });
   }
   LED.stopSpin();
 
   // then add the remainder asynchronously (shuffling if needed)
-  const remainingTracks = removeNth(tracks, start);
-  const picks = Math.min(MAX_QUEUED_TRACKS, remainingTracks.length);
-  if(picks) {
+  const playedCount = queue ? 0 : 1;
+  const picks = Math.min(MAX_QUEUED_TRACKS, tracks.length) - jumpTo - playedCount;
+  if(picks > 0) {
     if(shuffle) {
+      const remainingTracks = removeNth(tracks, playIdx);
       const shuffled = Shuffler.pick(remainingTracks, { picks });
       await queueRemainingTracks(arrayWrap(shuffled));
     } else {
-      await queueRemainingTracks(remainingTracks.slice(0, picks));
+      const remainderIndex = jumpTo + playedCount;
+      await queueRemainingTracks(tracks.slice(remainderIndex, remainderIndex + picks));
     }
   }
 }

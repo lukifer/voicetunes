@@ -1,0 +1,14 @@
+[
+  ["twenties",          "1920"],
+  ["thirties",          "1930"],
+  ["forties",           "1940"],
+  ["fifties",           "1950"],
+  ["sixties",           "1960"],
+  ["seventies",         "1970"],
+  ["eighties",          "1980"],
+  ["nineties",          "1990"],
+  ["aughts",            "2000"],
+  ["two thousands",     "2000"],
+  ["two thousand tens", "2010"],
+  ["twenty tens",       "2010"]
+]

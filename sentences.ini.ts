@@ -10,8 +10,15 @@ import {
 } from "./types";
 
 import config from "./config";
-const {ALIAS} = config;
+const {
+  ALIAS,
+  STARTING_YEAR,
+} = config;
 
+const currentYear = (new Date()).getFullYear();
+const years = [...Array(currentYear - STARTING_YEAR + 1)].map((x, n) => currentYear - n)
+
+const decades          = readJson("./data/decades.json");
 const ordinalWordsJson = readJson("./data/ordinalWords.json");
 
 async function get(which: EntityFilterType) {
@@ -45,7 +52,7 @@ artist = (${artistKeys.join(" | ")}){artist}
 <PlayTrack.playaction> [an] album [by] <PlayArtist.artist>
 
 [PlayArtistAlbumByNumber]
-albumnum = (${ordinalWordsJson.map((x: string[]) => x[1]).join(" | ")}){albumnum}
+albumnum = (latest | ${ordinalWordsJson.map((x: string[]) => x[1]).join(" | ")}){albumnum}
 <PlayTrack.playaction> [the] <albumnum> album [(of | by | from)] <PlayArtist.artist>
 <PlayTrack.playaction> [the] <albumnum> <PlayArtist.artist> album
 
@@ -64,6 +71,12 @@ genre = (${genreKeys.join(" | ")}){genre}
 
 <PlayTrack.playaction> [the] album <album>
 album = (${albumKeys.join(" | ")}){album}
+
+[PlayYear]
+year = (${years.join(" | ")})
+decades = (${decades.map((d: string) => d[0]).join(" | ")})
+<PlayTrack.playaction> [something] from [the] [year] <year>
+<PlayTrack.playaction> [something] from [the] [nineteen] <decade>
 
 [StartPlaylist]
 playlistaction = (start | play | shuffle | queue){playlistaction}

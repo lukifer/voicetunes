@@ -25,4 +25,5 @@ export function dbClose() {
 }
 
 export const dbQuery = async (query: SQLQuery) => dbConnect().query(query);
-export const dbRaw = async (query: string) => dbQuery(sql`${sql.__dangerous__rawValue(query)}`);
+export const dbRawValue = (fragment: string) => sql.__dangerous__rawValue(fragment);
+export const dbRaw = async (query: string) => dbQuery(sql`${dbRawValue(query)}`);

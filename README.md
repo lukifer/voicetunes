@@ -12,6 +12,7 @@ Rather than using a wake-word (which has a delay, and might result in false posi
 - "Play album \<album\>"
 - "Play album \<album\> by \<artist\>"
 - "Play the \<nth\> album by \<artist\>"
+- "Play the latest album by \<artist\>"
 - "Start playlist \<playlist\>"
 - "Shuffle playlist \<playlist\>"
 
@@ -96,7 +97,7 @@ https://voice2json.org/formats.html#sounds-like-pronunciations`
 - Command: "Jump to track \<N\>"
 - Command: "Play the \<Nth\> track from \<album\>"
 - Command: "Play something/\<album\> from \<year\>/\<decade\>"
-- Command: "Play the latest album by \<artist>\"
+- Command: "Play a new track by \<artist>\"
 - Local test database
 - Replace `exec` calls with Node sockets and pipes
 - Option to use [mopidy local](https://mopidy.com/ext/local/) library and native M3U playlists

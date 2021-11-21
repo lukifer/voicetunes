@@ -1,6 +1,7 @@
 declare module "mopidy" {
   type addArgs = {
     uris: string[];
+    at_position?: number;
   };
 
   type MopidyArtist = {

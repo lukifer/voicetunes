@@ -61,6 +61,7 @@ const configDefaults = {
   PATH_MUSIC: "/home/pi/music",
   PATH_RAMDISK: "/tmp/ramdisk",
   PREV_TRACK_MS: 15000,
+  STARTING_YEAR: 1900,
   SUBSTITUTIONS: {
     albums: {},
     artists: {},

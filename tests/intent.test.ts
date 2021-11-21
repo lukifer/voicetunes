@@ -100,6 +100,15 @@ test("parses a 'play nth album by artist' intent", async () => {
   for (const file of testFiles) expectTracksAdded([ file ]);
 });
 
+test("parses a 'play latest album by artist' intent", async () => {
+  await doIntent({
+    text: "play latest album by nirvana",
+    intent: {name: "PlayArtistAlbumByNumber"},
+    slots: {artist: "nirvana", albumnum: "latest"},
+  });
+  expectTracksAdded([ `${basePath}Nirvana/Unplugged%20In%20New%20York/01%20About%20A%20Girl.mp3` ]);
+});
+
 test("parses a 'play random album by artist' intent", async () => {
   await doIntent({
     text: "play an album by juno reactor",

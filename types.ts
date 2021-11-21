@@ -1,4 +1,4 @@
-export type StringMap = Record<string, string>;
+export type NumberMap = Record<string, number>;
 export type StringTuple = [string, string];
 export type StringReplaceTuple = [string | RegExp, string];
 

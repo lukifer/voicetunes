@@ -7,6 +7,7 @@ import {
   filterTracks,
   scrubAlbumName,
   scrubArtistName,
+  scrubGenre,
   scrubTrackName,
   substitutions,
 } from "./scrub";
@@ -26,13 +27,14 @@ import {
 import config from "./config";
 const {
   EXCLUDE_GENRES,
+  MIN_RATING,
   FILE_EXTENSIONS,
 } = config;
 
 const knex = knexConnect();
 
 const fileExtensionsLike = FILE_EXTENSIONS.map(ext => sql`location LIKE ${"%"+ext}`);
-const fileExtensionWhere = sql`${sql.join(fileExtensionsLike, sql`) OR (`)}`;
+const fileExtensionWhere = sql`(${sql.join(fileExtensionsLike, sql`) OR (`)})`;
 
 async function resetTables() {
   const voxTables = {
@@ -85,7 +87,7 @@ async function doAlbums() {
     AND track_number IS NOT NULL
     AND (${fileExtensionWhere})
     GROUP BY album, derived_artist
-    HAVING max_rating >= 80
+    HAVING max_rating >= ${MIN_RATING}
   `;
   const albums = await dbQuery(albumsSql) as SqlTrack[] || [];
   const filteredAlbums = albums.filter(({album}) => filterAlbums(album));
@@ -118,7 +120,7 @@ async function doArtists() {
     FROM tracks
     WHERE (${fileExtensionWhere})
     GROUP by artist
-    HAVING max_rating >= 80
+    HAVING max_rating >= ${MIN_RATING}
   `;
   const artistsRows = await dbQuery(artistSql);
   const artistNames = (artistsRows as SqlTrack[]).map(x => x.artist);
@@ -144,9 +146,8 @@ async function doGenres() {
   const filteredGenres = genres.filter(({genre}) => filterGenres(genre));
 
   for (const genreEntry of filteredGenres) {
-    // const genreSentence = (substitutions.genres[genre] || genre).toLowerCase();
     const {genre} = genreEntry;
-    const genreSentence = genre.toLowerCase();
+    const genreSentence = scrubGenre(genre.toLowerCase());
     const newRow = {
       sentence: genreSentence,
       genre,
@@ -181,9 +182,9 @@ async function doTracks() {
     ? sql`AND genre NOT IN (${sql.join(EXCLUDE_GENRES.map((x: string) => sql`${x}`), sql`,`)})`
     : sql``;
   const tracksSql = sql`
-    SELECT artist, name, track_id
+    SELECT artist, name, track_id, rating
     FROM tracks
-    WHERE rating >= 80
+    WHERE rating >= ${MIN_RATING}
     AND (${fileExtensionWhere})
     ${genreExclude}
   `;
