@@ -1,4 +1,4 @@
-import Mopidy from "mopidy";
+// import Mopidy from "mopidy";
 
 // FIXME:
 // ReferenceError: Cannot access 'mockData_1' before initialization

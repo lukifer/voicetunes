@@ -259,6 +259,7 @@ export interface MessageBase {
     name: MessageIntent,
   }
   slots: MessageSlots;
+  recognize_seconds?: number;
 }
 
 export interface MessagePlayArtist extends MessageBase {

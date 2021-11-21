@@ -1,12 +1,25 @@
 import Mopidy from "mopidy";
 import {doIntent, playTracks} from "../intent";
 import {wait}                 from "../utils";
-import {MessageBase}          from "../types";
 
 import {
   allegaeonConcertoEp,
   danseFiles,
 } from "./mockData";
+
+import {
+  acesHigh,
+  acesHighByIronMaiden,
+  acesHighBySteveAndSeagulls,
+  bestOfAllegaeon,
+  latestAlbumByNirvana,
+  genreBlues,
+  previousTrack,
+  queueAhHa,
+  shufflePlaylistDanse,
+  startPlaylistDanse,
+  seventhAlbumByAllegaeon,
+} from "./mockIntents";
 
 jest.mock("mopidy", () => {
   let seekPos = 0;
@@ -60,22 +73,14 @@ test("queues a track", async () => {
 });
 
 test("parses a 'queue by artist' intent", async () => {
-  await doIntent({
-    text: "queue something by ah ha",
-    intent: {name: "PlayArtist"},
-    slots: {artist: "ah ha", playaction: "queue"},
-  });
+  await doIntent(queueAhHa);
   const {mockMopidy} = (global as any);
   expect(mockMopidy.tracklist.clear).not.toHaveBeenCalled();
   expectTracksAdded([`${basePath}Ah%20Ha/Unknown%20Album/Take%20On%20Me.mp3`]);
 });
 
-test("parses a 'play best by artist' intent", async () => {
-  await doIntent({
-    text: "play the best of allegaeon",
-    intent: {name: "PlayArtistBest"},
-    slots: {artist: "allegaeon", playaction: "play"},
-  });
+test("handles a 'play best by artist' intent", async () => {
+  await doIntent(bestOfAllegaeon);
   const {mockMopidy} = (global as any);
 
   const allTracks = mockMopidy.tracklist.add.mock.calls.reduce(
@@ -89,27 +94,19 @@ test("parses a 'play best by artist' intent", async () => {
   expect(allTracks.includes(testFiles[1])).toBeFalsy();
 });
 
-test("parses a 'play nth album by artist' intent", async () => {
-  await doIntent({
-    text: "play seventh album by allegaeon",
-    intent: {name: "PlayArtistAlbumByNumber"},
-    slots: {artist: "allegaeon", albumnum: "seventh"},
-  });
+test("handles a 'play nth album by artist' intent", async () => {
+  await doIntent(seventhAlbumByAllegaeon);
   const testFiles = allegaeonConcertoEp.map(mp3 => `${basePath}${mp3}`);
   await wait(300);
   for (const file of testFiles) expectTracksAdded([ file ]);
 });
 
-test("parses a 'play latest album by artist' intent", async () => {
-  await doIntent({
-    text: "play latest album by nirvana",
-    intent: {name: "PlayArtistAlbumByNumber"},
-    slots: {artist: "nirvana", albumnum: "latest"},
-  });
+test("handles a 'play latest album by artist' intent", async () => {
+  await doIntent(latestAlbumByNirvana);
   expectTracksAdded([ `${basePath}Nirvana/Unplugged%20In%20New%20York/01%20About%20A%20Girl.mp3` ]);
 });
 
-test("parses a 'play random album by artist' intent", async () => {
+test("handles a 'play random album by artist' intent", async () => {
   await doIntent({
     text: "play an album by juno reactor",
     intent: {name: "PlayRandomAlbumByArtist"},
@@ -150,12 +147,8 @@ test("parses a 'play album' intent", async () => {
   expectTracksAdded(remainder);
 });
 
-test("parses a 'start playlist' intent", async () => {
-  await doIntent({
-    text: "start playlist danse",
-    intent: {name: "StartPlaylist"},
-    slots: {playlist: "danse", playlistaction: "start"},
-  });
+test("handles a 'start playlist' intent", async () => {
+  await doIntent(startPlaylistDanse);
   const testFiles = danseFiles.map(mp3 => `${basePath}${mp3}`);
   await wait(300);
   expectTracksAdded([testFiles[0]]);
@@ -163,13 +156,9 @@ test("parses a 'start playlist' intent", async () => {
   expectTracksAdded(testFiles.slice(6, 11));
 });
 
-test("parses a 'shuffle playlist' intent", async () => {
+test("handles a 'shuffle playlist' intent", async () => {
   const {mockMopidy} = (global as any);
-  await doIntent({
-    text: "shuffle playlist danse",
-    intent: {name: "StartPlaylist"},
-    slots: {playlist: "danse", playlistaction: "shuffle"},
-  });
+  await doIntent(shufflePlaylistDanse);
   const testFiles = danseFiles.map(mp3 => `${basePath}${mp3}`);
   await wait(300);
   const {tracklist} = mockMopidy;
@@ -179,28 +168,26 @@ test("parses a 'shuffle playlist' intent", async () => {
 });
 
 test("parses a 'play track' intent", async () => {
+  const intents = [
+    acesHigh,
+    acesHighBySteveAndSeagulls,
+    acesHighByIronMaiden,
+  ];
   const testFiles = {
     "": "Iron%20Maiden/Powerslave/01%20Aces%20High.mp3",
     "steve and seagulls": "Steve%20'n'%20Seagulls/Brothers%20In%20Farms/01%20Aces%20High.mp3",
     "iron maiden": "Iron%20Maiden/Powerslave/01%20Aces%20High.mp3",
   }
   Object.entries(testFiles).forEach(async ([artist, file]) => {
-    const track = `aces high${artist ? " by "+artist : ""}`;
-    await doIntent({
-      text: `play track ${track}`,
-      intent: {name: "PlayTrack"},
-      slots: {track},
-    });
+    await doIntent(intents.find(x =>
+      x.text === `play track aces high${artist ? " by "+artist : ""}`)
+    );
     expectTracksAdded([`${basePath}${file}`]);
   })
 });
 
 test("parses a 'play genre' intent", async () => {
-  await doIntent({
-    text: "play some blues",
-    intent: {name: "PlayGenre"},
-    slots: {genre: "blues", playlistaction: "play"},
-  });
+  await doIntent(genreBlues);
   expectTracksAdded([`${basePath}Ray%20Charles/Unknown%20Album/Shake%20Your%20Tailfeathers.mp3`]);
 });
 
@@ -209,27 +196,21 @@ test("previous track returns to start of track after a cutoff", async () => {
   const {mockMopidy} = (global as any);
   const {playback, tracklist} = mockMopidy;
 
-  const prevTrackIntent: MessageBase = {
-    text: "previous track",
-    intent: {name: "PreviousTrack"},
-    slots: {},
-  };
-
   // 1st track, pre-cutoff: seek to start
   await playback.seek(5 * 1000);
   expect(await playback.getTimePosition()).toEqual(5 * 1000);
   mockMopidy.playback.seek.mockClear();
-  await doIntent(prevTrackIntent);
+  await doIntent(previousTrack);
   expect(playback.seek).toHaveBeenCalledWith([0]);
 
   // 2nd track, pre-cutoff: go to previous
   tracklist.index = jest.fn().mockImplementation(() => 1);
   await playback.seek(5 * 1000);
-  await doIntent(prevTrackIntent);
+  await doIntent(previousTrack);
   expect(playback.previous).toHaveBeenCalled();
 
   // 2nd track, post-cutoff: seek to start
   await playback.seek(60 * 1000);
-  await doIntent(prevTrackIntent);
+  await doIntent(previousTrack);
   expect(playback.seek).toHaveBeenCalledWith([0]);
 });

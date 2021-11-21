@@ -74,7 +74,7 @@ album = (${albumKeys.join(" | ")}){album}
 
 [PlayYear]
 year = (${years.join(" | ")})
-decades = (${decades.map((d: string) => d[0]).join(" | ")})
+decade = (${decades.map((d: string) => d[0]).join(" | ")})
 <PlayTrack.playaction> [something] from [the] [year] <year>
 <PlayTrack.playaction> [something] from [the] [nineteen] <decade>
 
