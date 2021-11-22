@@ -225,6 +225,7 @@ export type Message = MessagePlayArtist
                     | MessagePlayAlbum
                     | MessagePlayGenre
                     | MessagePlayTrack
+                    | MessagePlayYear
                     | MessageStartPlaylist
                     | MessageMusicVolumeSet
                     | MessageMusicVolumeChange
@@ -239,6 +240,7 @@ export type MessageIntent =
 | "PlayAlbum"
 | "PlayGenre"
 | "PlayGenreBest"
+| "PlayYear"
 | "StartPlaylist"
 | "PlayTrack"
 | "MusicVolumeSet"
@@ -311,11 +313,22 @@ export interface MessagePlayTrack extends MessageBase {
   }
 }
 
+export interface MessagePlayYear extends MessageBase {
+  intentName: "PlayYear";
+  slots: {
+    playaction: "play" | "queue";
+    year?: string;
+    decade?: string;
+  }
+}
+
 export interface MessagePlayGenre extends MessageBase {
   intentName: "PlayGenre" | "PlayGenreBest";
   slots: {
     genre: string;
     playaction: "play" | "queue";
+    year?: string;
+    decade?: string;
   }
 }
 

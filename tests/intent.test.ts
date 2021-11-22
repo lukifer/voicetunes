@@ -12,9 +12,11 @@ import {
   acesHighByIronMaiden,
   acesHighBySteveAndSeagulls,
   bestOfAllegaeon,
-  latestAlbumByNirvana,
+  fiftiesSwing,
   genreBlues,
+  latestAlbumByNirvana,
   previousTrack,
+  progRockSeventySix,
   queueAhHa,
   shufflePlaylistDanse,
   startPlaylistDanse,
@@ -186,9 +188,19 @@ test("parses a 'play track' intent", async () => {
   })
 });
 
-test("parses a 'play genre' intent", async () => {
+test("handles a 'play genre' intent", async () => {
   await doIntent(genreBlues);
   expectTracksAdded([`${basePath}Ray%20Charles/Unknown%20Album/Shake%20Your%20Tailfeathers.mp3`]);
+});
+
+test("handles a 'play some progressive rock from nineteen seventy six' intent", async () => {
+  await doIntent(progRockSeventySix);
+  expectTracksAdded([`${basePath}Rush/2112/02%20A%20Passage%20To%20Bangkok.mp3`]);
+});
+
+test("handles a 'play some swing from the fifties' intent", async () => {
+  await doIntent(fiftiesSwing);
+  expectTracksAdded([`${basePath}Dean%20Martin/Unknown%20Album/How%20D'ya%20Like%20Your%20Eggs.mp3`]);
 });
 
 test("previous track returns to start of track after a cutoff", async () => {

@@ -36,6 +36,7 @@ import {
   MessagePlayRandomAlbumByArtist,
   MessagePlayGenre,
   MessagePlayTrack,
+  MessagePlayYear,
   MessageStartPlaylist,
   NumberMap,
   PlayStateCache,
@@ -58,6 +59,9 @@ const {
   VOICE2JSON_PROFILE,
 } = config;
 
+const years   = readJson("./data/years.json");
+const decades = readJson("./data/decades.json");
+
 const ord = readJson("./data/ordinalWords.json");
 const ordinalToNum: NumberMap =
   ord.reduce((acc: NumberMap, x: StringTuple) => ({
@@ -66,6 +70,11 @@ const ordinalToNum: NumberMap =
   }), {} as NumberMap);
 
 const trackLocations = (files: SqlTrack[]) => files.map(x => x.location.split("/iTunes%20Media/Music/")[1] || "")
+
+export const whereYear = (year: number, range?: number) =>
+  range
+  ? sql`AND t.year >= ${year} AND t.year <= ${year+range}`
+  : sql`AND t.year = ${year}`;
 
 let cachedIntents: {[text: string]: Message} = {};
 export async function textToIntent(text: string): Promise<Message | null> {
@@ -197,16 +206,21 @@ export async function doPlayAlbum(msg: MessagePlayAlbum) {
 
 export async function doPlayGenre(msg: MessagePlayGenre, best: boolean = false) {
   const { slots } = msg;
+  if(!slots?.genre) return err("no genre", msg);
+  const { decade, genre, year } = slots;
   const queue = slots.playaction === "queue";
   const minRating = best ? MIN_RATING_BEST : MIN_RATING;
   const genreTracks = await dbQuery(sql`
     SELECT t.location
     FROM vox_genres vg
     INNER JOIN tracks t ON vg.genre = t.genre
-    WHERE vg.sentence = ${slots.genre} AND t.rating >= ${minRating}
+    WHERE vg.sentence = ${genre}
+      AND t.rating >= ${minRating}
+      ${year   ? whereYear(years[year])        : sql``}
+      ${decade ? whereYear(decades[decade], 9) : sql``}
   `) as SqlTrack[];
   if(!genreTracks?.length) {
-    return err(`no tracks found for genre ${slots.genre}`, msg);
+    return err(`no tracks found for genre ${genre}`, msg);
   } else {
     // FIXME: handle multiple albums with the same name
     await playTracks(trackLocations(genreTracks), { shuffle: true, queue });
@@ -256,6 +270,12 @@ export async function doPlayTrack(msg: MessagePlayTrack) {
   }
 }
 
+export async function doPlayYear(msg: MessagePlayYear) {
+  const { slots } = msg;
+  if(!slots?.year && !slots?.decade) return err("no track", msg);
+  // TODO
+}
+
 export async function doIntent(raw: MessageBase) {
   // console.log('doIntent', doIntent)
   if(!raw?.text || !raw?.intent?.name || !raw.slots) {
@@ -274,6 +294,7 @@ export async function doIntent(raw: MessageBase) {
     case "PlayRandomAlbumByArtist": return await doPlayRandomAlbumByArtist(msg);
     case "StartPlaylist":           return await doStartPlaylist(msg);
     case "PlayTrack":               return await doPlayTrack(msg);
+    case "PlayYear":                return await doPlayYear(msg);
 
     case "RestoreTracklist": return await doRestoreState();
     case "SaveTracklist":    return await doSaveState();

@@ -727,6 +727,184 @@ export const previousTrack = {
   "slots": {}
 } as MessageBase;
 
+export const progRockSeventySix = {
+  "text": "play some progressive rock from nineteen seventy six",
+  "intent": {
+    "name": "PlayGenre",
+    "confidence": 1
+  },
+  "entities": [
+    {
+      "entity": "playaction",
+      "value": "play",
+      "raw_value": "play",
+      "source": "",
+      "start": 0,
+      "raw_start": 0,
+      "end": 4,
+      "raw_end": 4,
+      "tokens": [
+        "play"
+      ],
+      "raw_tokens": [
+        "play"
+      ]
+    },
+    {
+      "entity": "genre",
+      "value": "progressive rock",
+      "raw_value": "progressive rock",
+      "source": "",
+      "start": 10,
+      "raw_start": 10,
+      "end": 26,
+      "raw_end": 26,
+      "tokens": [
+        "progressive",
+        "rock"
+      ],
+      "raw_tokens": [
+        "progressive",
+        "rock"
+      ]
+    },
+    {
+      "entity": "year",
+      "value": "nineteen seventy six",
+      "raw_value": "nineteen seventy six",
+      "source": "",
+      "start": 32,
+      "raw_start": 32,
+      "end": 52,
+      "raw_end": 52,
+      "tokens": [
+        "nineteen",
+        "seventy",
+        "six"
+      ],
+      "raw_tokens": [
+        "nineteen",
+        "seventy",
+        "six"
+      ]
+    }
+  ],
+  "raw_text": "play some progressive rock from nineteen seventy six",
+  "tokens": [
+    "play",
+    "some",
+    "progressive",
+    "rock",
+    "from",
+    "nineteen",
+    "seventy",
+    "six"
+  ],
+  "raw_tokens": [
+    "play",
+    "some",
+    "progressive",
+    "rock",
+    "from",
+    "nineteen",
+    "seventy",
+    "six"
+  ],
+  "wav_seconds": null,
+  "transcribe_seconds": null,
+  "speech_confidence": null,
+  "wav_name": null,
+  "slots": {
+    "playaction": "play",
+    "genre": "progressive rock",
+    "year": "nineteen seventy six"
+  }
+} as MessageBase;
+
+export const fiftiesSwing = {
+  "text": "play some swing from the fifties",
+  "intent": {
+    "name": "PlayGenre",
+    "confidence": 1
+  },
+  "entities": [
+    {
+      "entity": "playaction",
+      "value": "play",
+      "raw_value": "play",
+      "source": "",
+      "start": 0,
+      "raw_start": 0,
+      "end": 4,
+      "raw_end": 4,
+      "tokens": [
+        "play"
+      ],
+      "raw_tokens": [
+        "play"
+      ]
+    },
+    {
+      "entity": "genre",
+      "value": "swing",
+      "raw_value": "swing",
+      "source": "",
+      "start": 10,
+      "raw_start": 10,
+      "end": 15,
+      "raw_end": 15,
+      "tokens": [
+        "swing"
+      ],
+      "raw_tokens": [
+        "swing"
+      ]
+    },
+    {
+      "entity": "decade",
+      "value": "fifties",
+      "raw_value": "fifties",
+      "source": "",
+      "start": 25,
+      "raw_start": 25,
+      "end": 32,
+      "raw_end": 32,
+      "tokens": [
+        "fifties"
+      ],
+      "raw_tokens": [
+        "fifties"
+      ]
+    }
+  ],
+  "raw_text": "play some swing from the fifties",
+  "tokens": [
+    "play",
+    "some",
+    "swing",
+    "from",
+    "the",
+    "fifties"
+  ],
+  "raw_tokens": [
+    "play",
+    "some",
+    "swing",
+    "from",
+    "the",
+    "fifties"
+  ],
+  "wav_seconds": null,
+  "transcribe_seconds": null,
+  "speech_confidence": null,
+  "wav_name": null,
+  "slots": {
+    "playaction": "play",
+    "genre": "swing",
+    "decade": "fifties"
+  }
+} as MessageBase;
+
 // FIXME: PlayGenreBest?
 // export const albumBannedOnVulcan = {
 //   "text": "play album banned on vulcan",

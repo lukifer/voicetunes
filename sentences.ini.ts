@@ -6,19 +6,15 @@ import {readJson} from "./utils";
 
 import {
   EntityFilterType,
+  NumberMap,
   VoxSentence,
 } from "./types";
 
 import config from "./config";
-const {
-  ALIAS,
-  STARTING_YEAR,
-} = config;
+const { ALIAS } = config;
 
-const currentYear = (new Date()).getFullYear();
-const years = [...Array(currentYear - STARTING_YEAR + 1)].map((x, n) => currentYear - n)
-
-const decades          = readJson("./data/decades.json");
+const years            = readJson("./data/years.json") as NumberMap;
+const decades          = readJson("./data/decades.json") as NumberMap;
 const ordinalWordsJson = readJson("./data/ordinalWords.json");
 
 async function get(which: EntityFilterType) {
@@ -60,10 +56,17 @@ albumnum = (latest | ${ordinalWordsJson.map((x: string[]) => x[1]).join(" | ")})
 <PlayTrack.playaction> [the] album <album>
 album = (${albumKeys.join(" | ")}){album}
 
+[PlayYear]
+year = (${Object.keys(years).join(" | ")}){year}
+decade = (${Object.keys(decades).join(" | ")}){decade}
+<PlayTrack.playaction> [(something | music | some music | a track)] from [the] [year] <year>
+<PlayTrack.playaction> [(something | music | some music | a track)] from [the] [nineteen] <decade>
+
 [PlayGenre]
 genre = (${genreKeys.join(" | ")}){genre}
-<PlayTrack.playaction> some <genre>
-<PlayTrack.playaction> genre <genre>
+<PlayTrack.playaction> [(some | genre)] <genre>
+<PlayTrack.playaction> [(some | genre)] <genre> from [year] <PlayYear.year>
+<PlayTrack.playaction> [(some | genre)] <genre> from [the] [decade] [nineteen] <PlayYear.decade>
 
 [PlayGenreBest]
 <PlayTrack.playaction> [the] best [of] [genre] <PlayGenre.genre>
@@ -71,12 +74,6 @@ genre = (${genreKeys.join(" | ")}){genre}
 
 <PlayTrack.playaction> [the] album <album>
 album = (${albumKeys.join(" | ")}){album}
-
-[PlayYear]
-year = (${years.join(" | ")})
-decade = (${decades.map((d: string) => d[0]).join(" | ")})
-<PlayTrack.playaction> [something] from [the] [year] <year>
-<PlayTrack.playaction> [something] from [the] [nineteen] <decade>
 
 [StartPlaylist]
 playlistaction = (start | play | shuffle | queue){playlistaction}

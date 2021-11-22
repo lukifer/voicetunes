@@ -2,16 +2,16 @@ import Mopidy from "mopidy";
 import { textToIntent } from "../intent";
 import { MessageBase }  from "../types";
 
-import { mockMopidy } from "./mockData";
-
 import {
   acesHigh,
   acesHighByIronMaiden,
   acesHighBySteveAndSeagulls,
   bestOfAllegaeon,
+  fiftiesSwing,
   genreBlues,
   latestAlbumByNirvana,
   previousTrack,
+  progRockSeventySix,
   queueAhHa,
   shufflePlaylistDanse,
   startPlaylistDanse,
@@ -68,6 +68,14 @@ test("parses 'shuffle playlist danse'", async () => {
 
 test("parses 'play some blues'", async () => {
   expect(await getIntent(genreBlues)).toMatchObject(genreBlues);
+});
+
+test("parses 'play some progressive rock from nineteen seventy six'", async () => {
+  expect(await getIntent(progRockSeventySix)).toMatchObject(progRockSeventySix);
+});
+
+test("parses 'play some swing from the fifties'", async () => {
+  expect(await getIntent(fiftiesSwing)).toMatchObject(fiftiesSwing);
 });
 
 test("parses 'previous track'", async () => {
