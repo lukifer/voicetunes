@@ -74,7 +74,7 @@ test("queues a track", async () => {
   expectTracksAdded([`${basePath}foo.mp3`])
 });
 
-test("parses a 'queue by artist' intent", async () => {
+test("handles a 'queue by artist' intent", async () => {
   await doIntent(queueAhHa);
   const {mockMopidy} = (global as any);
   expect(mockMopidy.tracklist.clear).not.toHaveBeenCalled();
@@ -169,20 +169,20 @@ test("handles a 'shuffle playlist' intent", async () => {
   expect(tracklist.add).not.toHaveBeenCalledWith({ uris: testFiles.slice(6, 11) });
 });
 
-test("parses a 'play track' intent", async () => {
+test("handles a 'play track' intent", async () => {
   const intents = [
     acesHigh,
     acesHighBySteveAndSeagulls,
     acesHighByIronMaiden,
   ];
   const testFiles = {
-    "": "Iron%20Maiden/Powerslave/01%20Aces%20High.mp3",
+    "":                   "Iron%20Maiden/Powerslave/01%20Aces%20High.mp3",
+    "iron maiden":        "Iron%20Maiden/Powerslave/01%20Aces%20High.mp3",
     "steve and seagulls": "Steve%20'n'%20Seagulls/Brothers%20In%20Farms/01%20Aces%20High.mp3",
-    "iron maiden": "Iron%20Maiden/Powerslave/01%20Aces%20High.mp3",
   }
   Object.entries(testFiles).forEach(async ([artist, file]) => {
     await doIntent(intents.find(x =>
-      x.text === `play track aces high${artist ? " by "+artist : ""}`)
+      x.text === `play track aces high${artist ? ` by ${artist}` : ""}`)
     );
     expectTracksAdded([`${basePath}${file}`]);
   })
