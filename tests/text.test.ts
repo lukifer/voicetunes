@@ -1,14 +1,17 @@
 import Mopidy from "mopidy";
 import { textToIntent } from "../intent";
-import { MessageBase }  from "../types";
+import { MessageBase, MessageIntent }  from "../types";
 
 import {
   acesHigh,
   acesHighByIronMaiden,
   acesHighBySteveAndSeagulls,
+  albumBannedOnVulcan,
   bestOfAllegaeon,
+  bestProgRockAughtThree,
   fiftiesSwing,
   genreBlues,
+  junoReactorAlbum,
   latestAlbumByNirvana,
   previousTrack,
   progRockSeventySix,
@@ -23,9 +26,9 @@ jest.mock("mopidy", () => {
   return jest.fn().mockImplementation(() => (global as any).mockMopidy);
 });
 
-async function getIntent(msg: MessageBase) {
+async function getIntent(msg: MessageBase, allowedIntents?: MessageIntent[]) {
   const { text } = msg;
-  const result = await textToIntent(text);
+  const result = await textToIntent(text, allowedIntents);
   const { recognize_seconds, ...intent } = result;
   return intent;
 }
@@ -54,6 +57,15 @@ test("parses 'play seventh album by allegaeon'", async () => {
   expect(await getIntent(seventhAlbumByAllegaeon)).toMatchObject(seventhAlbumByAllegaeon);
 });
 
+test("parses 'play the album banned on vulcan'", async () => {
+  expect(await getIntent(albumBannedOnVulcan)).toMatchObject(albumBannedOnVulcan);
+});
+
+test("parses 'play an album by juno reactor'", async () => {
+  // FIXME: why is this misfiring without the intent filter?
+  expect(await getIntent(junoReactorAlbum, ["PlayRandomAlbumByArtist"])).toMatchObject(junoReactorAlbum);
+});
+
 test("parses 'play the best of allegaeon'", async () => {
   expect(await getIntent(bestOfAllegaeon)).toMatchObject(bestOfAllegaeon);
 });
@@ -72,6 +84,10 @@ test("parses 'play some blues'", async () => {
 
 test("parses 'play some progressive rock from nineteen seventy six'", async () => {
   expect(await getIntent(progRockSeventySix)).toMatchObject(progRockSeventySix);
+});
+
+test("parses 'play the best progressive rock from two thousand and three'", async () => {
+  expect(await getIntent(bestProgRockAughtThree)).toMatchObject(bestProgRockAughtThree);
 });
 
 test("parses 'play some swing from the fifties'", async () => {

@@ -14,9 +14,12 @@ import {
   acesHigh,
   acesHighByIronMaiden,
   acesHighBySteveAndSeagulls,
+  albumBannedOnVulcan,
   bestOfAllegaeon,
+  bestProgRockAughtThree,
   fiftiesSwing,
   genreBlues,
+  junoReactorAlbum,
   latestAlbumByNirvana,
   previousTrack,
   progRockSeventySix,
@@ -123,11 +126,7 @@ test("handles a 'play latest album by artist' intent", async () => {
 });
 
 test("handles a 'play random album by artist' intent", async () => {
-  await doIntent({
-    text: "play an album by juno reactor",
-    intent: {name: "PlayRandomAlbumByArtist"},
-    slots: {artist: "juno reactor"},
-  });
+  await doIntent(junoReactorAlbum);
   const testFiles = [
     `01%20Conga%20Fury.mp3`,
     `02%20Magnetic%20(Robert%20Liener%20Remix).mp3`,
@@ -147,11 +146,7 @@ test("handles a 'play random album by artist' intent", async () => {
 // })
 
 test("parses a 'play album' intent", async () => {
-  await doIntent({
-    text: "play album banned on vulcan",
-    intent: {name: "PlayAlbum"},
-    slots: {album: "banned on vulcan"},
-  });
+  await doIntent(albumBannedOnVulcan);
   const testFiles = [
     `01%20Worf's%20Revenge%20(Klingon%20Rap).mp3`,
     `02%20The%20U.S.S.%20Make-Shit-Up.mp3`,
@@ -210,6 +205,11 @@ test("handles a 'play genre' intent", async () => {
 test("handles a 'play some progressive rock from nineteen seventy six' intent", async () => {
   await doIntent(progRockSeventySix);
   expectTracksAdded([`${basePath}Rush/2112/02%20A%20Passage%20To%20Bangkok.mp3`]);
+});
+
+test("handles a 'play the best progressive rock from two thousand and three' intent", async () => {
+  await doIntent(bestProgRockAughtThree);
+  expectTracksAdded([`${basePath}The%20Mars%20Volta/Unknown%20Album/This%20Apparatus%20Must%20Be%20Unearthed.mp3`]);
 });
 
 test("handles a 'play some swing from the fifties' intent", async () => {

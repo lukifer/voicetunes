@@ -29,6 +29,9 @@ async function go() {
   const trackKeys    = await get("tracks");
   const genreKeys    = await get("genres");
 
+  const fromYear   = 'from [the] [year]';
+  const fromDecade = 'from [the] [decade] [nineteen]';
+
   const sentences_ini = `
 
 [PlayTrack]
@@ -59,21 +62,24 @@ album = (${albumKeys.join(" | ")}){album}
 [PlayYear]
 year = (${Object.keys(years).join(" | ")}){year}
 decade = (${Object.keys(decades).join(" | ")}){decade}
-<PlayTrack.playaction> [(something | music | some music | a track)] from [the] [year] <year>
-<PlayTrack.playaction> [(something | music | some music | a track)] from [the] [nineteen] <decade>
+<PlayTrack.playaction> [(something | music | some music | a track)] ${fromYear} <year>
+<PlayTrack.playaction> [(something | music | some music | a track)] ${fromDecade} <decade>
 
 [PlayGenre]
 genre = (${genreKeys.join(" | ")}){genre}
 <PlayTrack.playaction> [(some | genre)] <genre>
-<PlayTrack.playaction> [(some | genre)] <genre> from [year] <PlayYear.year>
-<PlayTrack.playaction> [(some | genre)] <genre> from [the] [decade] [nineteen] <PlayYear.decade>
+<PlayTrack.playaction> [(some | genre)] <genre> ${fromYear} <PlayYear.year>
+<PlayTrack.playaction> [(some | genre)] <genre> ${fromDecade} <PlayYear.decade>
+<PlayTrack.playaction> [some] <PlayYear.decade> <genre>
 
 [PlayGenreBest]
-<PlayTrack.playaction> [the] best [of] [genre] <PlayGenre.genre>
-<PlayTrack.playaction> some (great | awesome) <PlayGenre.genre>
+<PlayTrack.playaction> [some] (great | awesome | [the] best [of]) [genre] <PlayGenre.genre>
+<PlayTrack.playaction> [some] (great | awesome | [the] best [of]) [genre] <PlayGenre.genre> ${fromYear} <PlayYear.year>
+<PlayTrack.playaction> [some] (great | awesome | [the] best [of]) [genre] <PlayGenre.genre> from ${fromDecade} <PlayYear.decade>
 
-<PlayTrack.playaction> [the] album <album>
-album = (${albumKeys.join(" | ")}){album}
+[PlayAlbumYear]
+<PlayTrack.playaction> [an] album ${fromYear} <PlayYear.year>
+<PlayTrack.playaction> [an] album ${fromDecade} <PlayYear.decade>
 
 [StartPlaylist]
 playlistaction = (start | play | shuffle | queue){playlistaction}

@@ -30,6 +30,7 @@ import {
   PlayOptions,
   MessageBase,
   Message,
+  MessageIntent,
   MessagePlayAlbum,
   MessagePlayArtist,
   MessagePlayArtistAlbumByNumber,
@@ -77,12 +78,12 @@ export const whereYear = (year: number, range?: number) =>
   : sql`AND t.year = ${year}`;
 
 let cachedIntents: {[text: string]: Message} = {};
-export async function textToIntent(text: string): Promise<Message | null> {
-  //console.log("textToIntent", text, "cached="+(!!cachedIntents[text]));
+export async function textToIntent(text: string, allowedIntents?: MessageIntent[]): Promise<Message | null> {
   if(!cachedIntents[text]) {
+    const flags = `--text-input --replace-numbers ${allowedIntents ? `-f ${allowedIntents.join(',')}` : ''}`;
     const { stdout } = await execp([
       `echo '${text}'`,
-      `${VOICE2JSON_BIN} --profile ${VOICE2JSON_PROFILE} recognize-intent --text-input --replace-numbers`,
+      `${VOICE2JSON_BIN} --profile ${VOICE2JSON_PROFILE} recognize-intent ${flags}`,
     ].join(" | "));
 
     try {
