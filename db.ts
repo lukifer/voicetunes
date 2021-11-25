@@ -1,5 +1,5 @@
-import connect, {DatabaseConnection, SQLQuery, sql} from '@databases/sqlite';
-import knex, {Knex} from "knex";
+import connect, { DatabaseConnection, SQLQuery, sql } from '@databases/sqlite';
+import knex, { Knex } from "knex";
 
 import config from "./config";
 
@@ -16,7 +16,7 @@ export function knexConnect(filename: string = config.PATH_DATABASE): Knex {
 }
 
 export function dbConnect(filename: string | undefined = config.PATH_DATABASE) {
-  if (!db) db = connect(filename);
+  if (!db) db = filename ? connect(filename) : connect(); // empty string = in-memory db
   return db;
 }
 

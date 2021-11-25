@@ -94,7 +94,7 @@ async function doAlbums() {
 
   for (const album of filteredAlbums) {
     const albumSentence  = scrubAlbumName(album.album);
-    if(!albumSentence) return;
+    if (!albumSentence) return;
     const newRows = [{
       sentence: albumSentence,
       album: album.album,
@@ -200,10 +200,11 @@ async function doTracks() {
       { sentence: trackByArtistSentence },
     ];
     for (const newRow of newRows) {
-      await dbRaw(knex('vox_tracks').insert({
-        ...newRow,
-        track_id,
-      }).toString());
+      if (newRow.sentence)
+        await dbRaw(knex('vox_tracks').insert({
+          ...newRow,
+          track_id,
+        }).toString());
     }
   }
 }

@@ -1,6 +1,9 @@
-import Mopidy from "mopidy";
-import {doIntent, playTracks} from "../intent";
-import {wait}                 from "../utils";
+import * as fs from "fs";
+import Mopidy  from "mopidy";
+
+import { dbRaw }                from "../db";
+import { doIntent, playTracks } from "../intent";
+import { wait }                 from "../utils";
 
 import {
   allegaeonConcertoEp,
@@ -22,6 +25,17 @@ import {
   startPlaylistDanse,
   seventhAlbumByAllegaeon,
 } from "./mockIntents";
+
+const basePath = "file:///home/pi/music/";
+const testDbSql = fs.readFileSync(`${__dirname}/testDb.sql`, {encoding: "utf-8"})
+
+jest.mock("../config", () => {
+  const originalModule = jest.requireActual("../config");
+  return {
+    ...originalModule.default,
+    PATH_DATABASE: "",
+  };
+});
 
 jest.mock("mopidy", () => {
   let seekPos = 0;
@@ -49,9 +63,9 @@ function expectTracksAdded(uris: string[]) {
   expect(mockMopidy.tracklist.add).toHaveBeenCalledWith({ uris });
 }
 
-const basePath = "file:///home/pi/music/";
-
-beforeEach(() => {
+beforeEach(async () => {
+  const sqls = testDbSql.split("\n\n");
+  for (const sql of sqls) await dbRaw(sql);
   global.Math.random = () => 0.38;
   const {mockMopidy} = (global as any);
   mockMopidy.playback.play.mockClear();
