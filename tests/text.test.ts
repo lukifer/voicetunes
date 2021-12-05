@@ -8,6 +8,7 @@ import {
   acesHighBySteveAndSeagulls,
   albumBannedOnVulcan,
   bestOfAllegaeon,
+  bestOfSixtyFive,
   bestProgRockAughtThree,
   fiftiesSwing,
   genreBlues,
@@ -92,6 +93,10 @@ test("parses 'play the best progressive rock from two thousand and three'", asyn
 
 test("parses 'play some swing from the fifties'", async () => {
   expect(await getIntent(fiftiesSwing)).toMatchObject(fiftiesSwing);
+});
+
+test("parses 'play best of nineteen sixty five'", async () => {
+  expect(await getIntent(bestOfSixtyFive)).toMatchObject(bestOfSixtyFive);
 });
 
 test("parses 'previous track'", async () => {

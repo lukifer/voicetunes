@@ -16,9 +16,11 @@ import {
   acesHighBySteveAndSeagulls,
   albumBannedOnVulcan,
   bestOfAllegaeon,
+  bestOfSixtyFive,
   bestProgRockAughtThree,
   fiftiesSwing,
   genreBlues,
+  jumpToTrackThree,
   junoReactorAlbum,
   latestAlbumByNirvana,
   previousTrack,
@@ -44,10 +46,11 @@ jest.mock("mopidy", () => {
   let seekPos = 0;
   (global as any).mockMopidy = {
     tracklist: {
-      add:     jest.fn(),
-      clear:   jest.fn(),
-      index:   jest.fn(() => 0),
-      shuffle: jest.fn(),
+      add:       jest.fn(),
+      clear:     jest.fn(),
+      index:     jest.fn(() => 0),
+      shuffle:   jest.fn(),
+      getTracks: jest.fn(() => []),
     },
     playback: {
       play: jest.fn(),
@@ -146,6 +149,7 @@ test("handles a 'play random album by artist' intent", async () => {
 // })
 
 test("parses a 'play album' intent", async () => {
+  const {mockMopidy} = (global as any);
   await doIntent(albumBannedOnVulcan);
   const testFiles = [
     `01%20Worf's%20Revenge%20(Klingon%20Rap).mp3`,
@@ -156,6 +160,9 @@ test("parses a 'play album' intent", async () => {
   const [first, ...remainder] = testFiles;
   expectTracksAdded([first]);
   expectTracksAdded(remainder);
+
+  await doIntent(jumpToTrackThree);
+  expect(jumpToTrackThree).toHaveBeenCalledTimes(2);
 });
 
 test("handles a 'start playlist' intent", async () => {
@@ -215,6 +222,11 @@ test("handles a 'play the best progressive rock from two thousand and three' int
 test("handles a 'play some swing from the fifties' intent", async () => {
   await doIntent(fiftiesSwing);
   expectTracksAdded([`${basePath}Dean%20Martin/Unknown%20Album/How%20D'ya%20Like%20Your%20Eggs.mp3`]);
+});
+
+test("handles a 'play best of nineteen sixty five' intent", async () => {
+  await doIntent(bestOfSixtyFive);
+  expectTracksAdded([`${basePath}Compilations/Pulp%20Fiction/13%20Flowers%20On%20The%20Wall.mp3`]);
 });
 
 test("previous track returns to start of track after a cutoff", async () => {

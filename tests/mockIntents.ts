@@ -1144,3 +1144,120 @@ export const junoReactorAlbum = {
     "artist": "juno reactor"
   }
 } as MessageBase;
+
+export const bestOfSixtyFive = {
+  "text": "play best of nineteen sixty five",
+  "intent": {
+    "name": "PlayYearBest",
+    "confidence": 0.9833333333333333
+  },
+  "entities": [
+    {
+      "entity": "playaction",
+      "value": "play",
+      "raw_value": "play",
+      "source": "",
+      "start": 0,
+      "raw_start": 0,
+      "end": 4,
+      "raw_end": 4,
+      "tokens": [
+        "play"
+      ],
+      "raw_tokens": [
+        "play"
+      ]
+    },
+    {
+      "entity": "year",
+      "value": "nineteen sixty five",
+      "raw_value": "nineteen sixty five",
+      "source": "",
+      "start": 13,
+      "raw_start": 13,
+      "end": 32,
+      "raw_end": 32,
+      "tokens": [
+        "nineteen",
+        "sixty",
+        "five"
+      ],
+      "raw_tokens": [
+        "nineteen",
+        "sixty",
+        "five"
+      ]
+    }
+  ],
+  "raw_text": "play the best of nineteen sixty five",
+  "tokens": [
+    "play",
+    "best",
+    "of",
+    "nineteen",
+    "sixty",
+    "five"
+  ],
+  "raw_tokens": [
+    "play",
+    "best",
+    "of",
+    "nineteen",
+    "sixty",
+    "five"
+  ],
+  "wav_seconds": null,
+  "transcribe_seconds": null,
+  "speech_confidence": null,
+  "wav_name": null,
+  "slots": {
+    "playaction": "play",
+    "year": "nineteen sixty five"
+  }
+} as MessageBase;
+
+export const jumpToTrackThree = {
+  "text": "jump to track 3",
+  "intent": {
+    "name": "JumpToTrack",
+    "confidence": 1
+  },
+  "entities": [
+    {
+      "entity": "tracknum",
+      "value": 3,
+      "raw_value": "three",
+      "source": "rhasspy/number",
+      "start": 14,
+      "raw_start": 14,
+      "end": 15,
+      "raw_end": 19,
+      "tokens": [
+        3
+      ],
+      "raw_tokens": [
+        "three"
+      ]
+    }
+  ],
+  "raw_text": "jump to track three",
+  "tokens": [
+    "jump",
+    "to",
+    "track",
+    3
+  ],
+  "raw_tokens": [
+    "jump",
+    "to",
+    "track",
+    "three"
+  ],
+  "wav_seconds": null,
+  "transcribe_seconds": null,
+  "speech_confidence": null,
+  "wav_name": null,
+  "slots": {
+    "tracknum": 3
+  }
+} as MessageBase;

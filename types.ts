@@ -216,6 +216,8 @@ export interface MessageSlots {
   playlist?:       string;
   playlistaction?: string;
   track?:          string;
+  tracknum?:       number;
+  tracknumword?:   string;
   volume?:         number;
 }
 
@@ -227,6 +229,7 @@ export type Message = MessagePlayArtist
                     | MessagePlayTrack
                     | MessagePlayYear
                     | MessageStartPlaylist
+                    | MessageJumpToTrack
                     | MessageMusicVolumeSet
                     | MessageMusicVolumeChange
                     | MessageMisc
@@ -241,8 +244,10 @@ export type MessageIntent =
 | "PlayGenre"
 | "PlayGenreBest"
 | "PlayYear"
+| "PlayYearBest"
 | "StartPlaylist"
 | "PlayTrack"
+| "JumpToTrack"
 | "MusicVolumeSet"
 | "MusicVolumeChange"
 | "Alias"
@@ -314,7 +319,7 @@ export interface MessagePlayTrack extends MessageBase {
 }
 
 export interface MessagePlayYear extends MessageBase {
-  intentName: "PlayYear";
+  intentName: "PlayYear" | "PlayYearBest";
   slots: {
     playaction: "play" | "queue";
     year?: string;
@@ -329,6 +334,14 @@ export interface MessagePlayGenre extends MessageBase {
     playaction: "play" | "queue";
     year?: string;
     decade?: string;
+  }
+}
+
+export interface MessageJumpToTrack extends MessageBase {
+  intentName: "JumpToTrack";
+  slots: {
+    tracknum?: number;
+    tracknumword?: string;
   }
 }
 
@@ -354,6 +367,7 @@ export interface MessageMisc extends MessageBase {
             | "Stop"
             | "RestoreTracklist"
             | "SaveTracklist"
+            | "WhatIsPlaying"
             | "WhatIsTime"
             | "Nevermind"
             ;

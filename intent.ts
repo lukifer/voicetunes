@@ -1,7 +1,5 @@
-import Shuffler        from "shuffle-array";
-import { exec, spawn } from "child_process";
-import { promisify }   from "util";
-import { sql }         from '@databases/sqlite';
+import Shuffler from "shuffle-array";
+import { sql }  from "@databases/sqlite";
 
 import config     from "./config";
 import { mopidy } from "./index";
@@ -16,6 +14,8 @@ import {
 import {
   arrayWrap,
   between,
+  execp,
+  ffprobeTags,
   // mqtt,
   readJson,
   removeNth,
@@ -23,8 +23,6 @@ import {
   wait,
   writeCache,
 } from "./utils";
-
-const execp = promisify(exec);
 
 import {
   PlayOptions,
@@ -39,6 +37,7 @@ import {
   MessagePlayTrack,
   MessagePlayYear,
   MessageStartPlaylist,
+  MessageJumpToTrack,
   NumberMap,
   PlayStateCache,
   SqlTrack,
@@ -271,10 +270,45 @@ export async function doPlayTrack(msg: MessagePlayTrack) {
   }
 }
 
-export async function doPlayYear(msg: MessagePlayYear) {
+export async function doPlayYear(msg: MessagePlayYear, best = false) {
   const { slots } = msg;
-  if(!slots?.year && !slots?.decade) return err("no track", msg);
-  // TODO
+  const { decade, year } = slots;
+  if(!year && !decade) return err("no year", msg);
+  const queue = slots.playaction === "queue";
+  const minRating = best ? MIN_RATING_BEST : MIN_RATING;
+  const yearTracks = await dbQuery(sql`
+    SELECT t.location
+    FROM tracks t
+    WHERE t.rating >= ${minRating}
+    ${year   ? whereYear(years[year])        : sql``}
+    ${decade ? whereYear(decades[decade], 9) : sql``}
+  `) as SqlTrack[];
+  if(!yearTracks?.length) {
+    return err("no tracks", msg);
+  } else {
+    await playTracks(trackLocations(yearTracks), { shuffle: true, queue });
+  }
+}
+
+export async function doJumpToTrack(msg: MessageJumpToTrack) {
+  const { playback, tracklist } = mopidy;
+  const { slots } = msg;
+  if(!slots?.tracknum && !slots?.tracknumword) return err("no track", msg);
+  const num = slots?.tracknum || ordinalToNum[slots.tracknumword];
+
+  const currentTracks = await tracklist.getTracks();
+  const i = await tracklist.index();
+  if (!currentTracks || !currentTracks[i])
+    return err("current track not found", msg)
+
+  const file = decodeURIComponent(currentTracks[i].uri.replace(/^file:\/\//, ""));
+  const current = await ffprobeTags(file, ["album", "track"]);
+
+  const diff = num - parseInt(current?.track);
+  await playback.pause();
+  if (diff > 0) for (let i = 0; i < diff; i++) await playback.next();
+  if (diff < 0) for (let i = 0; i > diff; i--) await playback.previous();
+  await playback.play();
 }
 
 export async function doIntent(raw: MessageBase) {
@@ -296,6 +330,8 @@ export async function doIntent(raw: MessageBase) {
     case "StartPlaylist":           return await doStartPlaylist(msg);
     case "PlayTrack":               return await doPlayTrack(msg);
     case "PlayYear":                return await doPlayYear(msg);
+    case "PlayYearBest":            return await doPlayYear(msg, true);
+    case "JumpToTrack":             return await doJumpToTrack(msg);
 
     case "RestoreTracklist": return await doRestoreState();
     case "SaveTracklist":    return await doSaveState();
@@ -331,16 +367,13 @@ export async function doIntent(raw: MessageBase) {
       else if(direction === "down") changeVol(-10);
       break;
 
-    // case "WhatIsPlaying":
-    //   const currentTracks = await tracklist.getTracks();
-    //   const i = await tracklist.index();
-    //   const file = decodeURIComponent(currentTracks[i].replace(/^file:\/\//, ""));
-    //   const tags = "format_tags=artist,title,album";
-    //   const probe = await execp(
-    //     `ffprobe -show_entries ${tags} -of default=noprint_wrappers=1:nokey=1 ${file}`
-    //   );
-    //   console.log(probe.stdout);
-    //   break;
+    case "WhatIsPlaying":
+      const currentTracks = await mopidy.tracklist.getTracks();
+      const i = await mopidy.tracklist.index();
+      const file = decodeURIComponent(currentTracks[i].uri.replace(/^file:\/\//, ""));
+      const tags = await ffprobeTags(file, ["artist", "title"]);
+      SFX.speak(`${tags.title} by ${tags.artist}`);
+      break;
 
     case "WhatIsTime":
       const { stdout } = await execp([

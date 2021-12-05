@@ -13,9 +13,11 @@ import {
 import config from "./config";
 const { ALIAS } = config;
 
-const years            = readJson("./data/years.json") as NumberMap;
-const decades          = readJson("./data/decades.json") as NumberMap;
-const ordinalWordsJson = readJson("./data/ordinalWords.json");
+const years        = readJson("./data/years.json") as NumberMap;
+const decades      = readJson("./data/decades.json") as NumberMap;
+const ordinalWords = readJson("./data/ordinalWords.json");
+
+const ordinalLabels = ordinalWords.map((x: string[]) => x[1]);
 
 async function get(which: EntityFilterType) {
   const sentences = await dbQuery(sql`SELECT sentence FROM ${sql.ident(`vox_${which}`)}`) as VoxSentence[] || []
@@ -29,8 +31,8 @@ async function go() {
   const trackKeys    = await get("tracks");
   const genreKeys    = await get("genres");
 
-  const fromYear   = 'from [the] [year]';
-  const fromDecade = 'from [the] [decade] [nineteen]';
+  const fromYear   = '(from | of) [the] [year]';
+  const fromDecade = '(from | of) [the] [decade] [nineteen]';
 
   const sentences_ini = `
 
@@ -51,7 +53,7 @@ artist = (${artistKeys.join(" | ")}){artist}
 <PlayTrack.playaction> [an] album [by] <PlayArtist.artist>
 
 [PlayArtistAlbumByNumber]
-albumnum = (latest | ${ordinalWordsJson.map((x: string[]) => x[1]).join(" | ")}){albumnum}
+albumnum = (latest | ${ordinalLabels.join(" | ")}){albumnum}
 <PlayTrack.playaction> [the] <albumnum> album [(of | by | from)] <PlayArtist.artist>
 <PlayTrack.playaction> [the] <albumnum> <PlayArtist.artist> album
 
@@ -59,27 +61,31 @@ albumnum = (latest | ${ordinalWordsJson.map((x: string[]) => x[1]).join(" | ")})
 <PlayTrack.playaction> [the] album <album>
 album = (${albumKeys.join(" | ")}){album}
 
-[PlayYear]
+[PlayGenreBest]
 year = (${Object.keys(years).join(" | ")}){year}
 decade = (${Object.keys(decades).join(" | ")}){decade}
-<PlayTrack.playaction> [(something | music | some music | a track)] ${fromYear} <year>
-<PlayTrack.playaction> [(something | music | some music | a track)] ${fromDecade} <decade>
+genre = (${genreKeys.join(" | ")}){genre}
+<PlayTrack.playaction> [some] (great | awesome | [the] best [of]) [genre] <genre>
+<PlayTrack.playaction> [some] (great | awesome | [the] best [of]) [genre] <genre> ${fromYear} <year>
+<PlayTrack.playaction> [some] (great | awesome | [the] best [of]) [genre] <genre> ${fromDecade} <decade>
 
 [PlayGenre]
-genre = (${genreKeys.join(" | ")}){genre}
-<PlayTrack.playaction> [(some | genre)] <genre>
-<PlayTrack.playaction> [(some | genre)] <genre> ${fromYear} <PlayYear.year>
-<PlayTrack.playaction> [(some | genre)] <genre> ${fromDecade} <PlayYear.decade>
-<PlayTrack.playaction> [some] <PlayYear.decade> <genre>
+<PlayTrack.playaction> [(some | genre)] <PlayGenreBest.genre>
+<PlayTrack.playaction> [(some | genre)] <PlayGenreBest.genre> ${fromYear} <PlayGenreBest.year>
+<PlayTrack.playaction> [(some | genre)] <PlayGenreBest.genre> ${fromDecade} <PlayGenreBest.decade>
+<PlayTrack.playaction> [some] <PlayGenreBest.decade> <PlayGenreBest.genre>
 
-[PlayGenreBest]
-<PlayTrack.playaction> [some] (great | awesome | [the] best [of]) [genre] <PlayGenre.genre>
-<PlayTrack.playaction> [some] (great | awesome | [the] best [of]) [genre] <PlayGenre.genre> ${fromYear} <PlayYear.year>
-<PlayTrack.playaction> [some] (great | awesome | [the] best [of]) [genre] <PlayGenre.genre> from ${fromDecade} <PlayYear.decade>
+[PlayYear]
+<PlayTrack.playaction> (something | [some] music | a track | tracks) ${fromYear} <PlayGenreBest.year>
+<PlayTrack.playaction> (something | [some] music | a track | tracks) ${fromDecade} <PlayGenreBest.decade>
+
+[PlayYearBest]
+<PlayTrack.playaction> ([the] best | some [thing] great | some [thing] awesome) [music] ${fromYear} <PlayGenreBest.year>
+<PlayTrack.playaction> ([the] best | some [thing] great | some [thing] awesome) [music] ${fromDecade} <PlayGenreBest.decade>
 
 [PlayAlbumYear]
-<PlayTrack.playaction> [an] album ${fromYear} <PlayYear.year>
-<PlayTrack.playaction> [an] album ${fromDecade} <PlayYear.decade>
+<PlayTrack.playaction> [an] album ${fromYear} <PlayGenreBest.year>
+<PlayTrack.playaction> [an] album ${fromDecade} <PlayGenreBest.decade>
 
 [StartPlaylist]
 playlistaction = (start | play | shuffle | queue){playlistaction}
@@ -95,6 +101,12 @@ what is the last log entry
 [WhatIsTime]
 what time is it
 what is the time
+
+[JumpToTrack]
+tracknum = (1..30){tracknum}
+tracknumword = (${ordinalLabels.join(" | ")}){tracknumword}
+(jump | go) to track [number] <tracknum>
+(jump | go) to [the] <tracknumword> track
 
 [PreviousTrack]
 previous track
