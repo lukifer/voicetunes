@@ -16,6 +16,7 @@ import {
   between,
   execp,
   ffprobeTags,
+  locationUriToPath,
   // mqtt,
   readJson,
   removeNth,
@@ -301,7 +302,7 @@ export async function doJumpToTrack(msg: MessageJumpToTrack) {
   if (!currentTracks || !currentTracks[i])
     return err("current track not found", msg)
 
-  const file = decodeURIComponent(currentTracks[i].uri.replace(/^file:\/\//, ""));
+  const file = locationUriToPath(currentTracks[i].uri);
   const current = await ffprobeTags(file, ["album", "track"]);
 
   const diff = num - parseInt(current?.track);
@@ -370,7 +371,7 @@ export async function doIntent(raw: MessageBase) {
     case "WhatIsPlaying":
       const currentTracks = await mopidy.tracklist.getTracks();
       const i = await mopidy.tracklist.index();
-      const file = decodeURIComponent(currentTracks[i].uri.replace(/^file:\/\//, ""));
+      const file = locationUriToPath(currentTracks[i].uri);
       const tags = await ffprobeTags(file, ["artist", "title"]);
       SFX.speak(`${tags.title} by ${tags.artist}`);
       break;

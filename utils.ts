@@ -41,3 +41,6 @@ export async function ffprobeTags(file: string, tags: string[]) {
   const result = stdout.split("\n");
   return tags.reduce((out, tag, n) => ({ ...out, [tag]: result[n] }), {} as Record<string, string>);
 }
+
+export const locationUriToPath = (uri: string) => decodeURIComponent(uri.replace(/^file:\/\//, ""));
+export const pathToLocationUri = (path: string) => `file://${encodeURI(path)}`;

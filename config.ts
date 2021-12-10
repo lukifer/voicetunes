@@ -43,6 +43,7 @@ const configDefaults = {
     playlists: [],
     tracks: [],
   },
+  FLAC_HACK: false,
   KEY_UP: 233,
   KEY_DOWN: 234,
   KEY_LEFT: 182,

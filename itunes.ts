@@ -24,9 +24,15 @@ import {
   knexConnect,
 } from "./db";
 
+import {
+  execp,
+  pathToLocationUri,
+} from "./utils";
+
 import config from "./config";
 const {
   EXCLUDE_GENRES,
+  FLAC_HACK,
   MIN_RATING,
   FILE_EXTENSIONS,
 } = config;
@@ -35,6 +41,47 @@ const knex = knexConnect();
 
 const fileExtensionsLike = FILE_EXTENSIONS.map(ext => sql`location LIKE ${"%"+ext}`);
 const fileExtensionWhere = sql`(${sql.join(fileExtensionsLike, sql`) OR (`)})`;
+
+async function flacHack() {
+  if (!FLAC_HACK) return;
+
+  const { stdout } = await execp("find ~/Music/iTunes -name *.flac")
+  const flacs = stdout.split("\n").filter(x => !!x);
+  let replaceCount = 0;
+
+  for (const flac of flacs) {
+    const flacUri = pathToLocationUri(flac);
+    const noExtUri = flacUri.replace(/flac$/, "");
+
+    const locationEq = FILE_EXTENSIONS.map(ext => sql`location LIKE ${noExtUri + ext}`);
+    const locationWhere = sql`(${sql.join(locationEq, sql`) OR (`)})`;
+
+    const flacSql = sql`
+      SELECT track_id, location
+      FROM tracks
+      WHERE ${locationWhere}
+    `;
+    const flacTracks = await dbQuery(flacSql) as SqlTrack[] || [];
+
+    if (flacTracks.length > 1) {
+      console.log(`WARNING: multiple tracks found for FLAC: ${flacTracks.map(x => x.track_id).join(',')}`);
+    }
+    if (flacTracks[0]?.track_id) {
+      if (!/flac$/.test(flacTracks[0].location)) {
+        const updateFlac = sql`
+          UPDATE tracks
+          SET location = ${flacUri}
+          WHERE track_id = ${flacTracks[0].track_id}
+        `;
+        await dbQuery(updateFlac);
+        replaceCount++;
+      }
+    } else {
+      console.log(`No track found for FLAC: ${flac}`);
+    }
+  }
+  if (replaceCount) console.log(`${replaceCount} FLACs substituted.`);
+}
 
 async function resetTables() {
   const voxTables = {
@@ -211,6 +258,7 @@ async function doTracks() {
 
 async function go() {
   await resetTables();
+  await flacHack();
   await doAlbums();
   await doArtists();
   await doGenres();
