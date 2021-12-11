@@ -1146,10 +1146,10 @@ export const junoReactorAlbum = {
 } as MessageBase;
 
 export const bestOfSixtyFive = {
-  "text": "play best of nineteen sixty five",
+  "text": "play the best of nineteen sixty five",
   "intent": {
     "name": "PlayYearBest",
-    "confidence": 0.9833333333333333
+    "confidence": 1
   },
   "entities": [
     {
@@ -1173,10 +1173,10 @@ export const bestOfSixtyFive = {
       "value": "nineteen sixty five",
       "raw_value": "nineteen sixty five",
       "source": "",
-      "start": 13,
-      "raw_start": 13,
-      "end": 32,
-      "raw_end": 32,
+      "start": 17,
+      "raw_start": 17,
+      "end": 36,
+      "raw_end": 36,
       "tokens": [
         "nineteen",
         "sixty",
@@ -1192,6 +1192,7 @@ export const bestOfSixtyFive = {
   "raw_text": "play the best of nineteen sixty five",
   "tokens": [
     "play",
+    "the",
     "best",
     "of",
     "nineteen",
@@ -1200,6 +1201,7 @@ export const bestOfSixtyFive = {
   ],
   "raw_tokens": [
     "play",
+    "the",
     "best",
     "of",
     "nineteen",

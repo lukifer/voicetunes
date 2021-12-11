@@ -1,4 +1,10 @@
-import { between, ffprobeTags, removeNth } from "../utils";
+import os from "os";
+import {
+  between,
+  escQuotes,
+  ffprobeTags,
+  removeNth,
+} from "../utils";
 
 test("removeNth() returns array without a specific entry", () => {
   const arr = ["a", "b", "c", "d", "e"];
@@ -14,8 +20,13 @@ test("between() coalesces number within a range", () => {
   expect(between(low, high+1, high)).toStrictEqual(high);
 });
 
+const file = `${os.homedir()}/Music/iTunes/iTunes Media/Music/Allegaeon/Concerto in Dm/01 Concerto in Dm.mp3`;
+
+test("quotes are escaped", async () => {
+  expect(escQuotes('hello "world"')).toEqual('hello \\"world\\"');
+});
+
 test("ffprobe gets ID3 tags", async () => {
-  const file = "~/Music/iTunes/iTunes\\ Media/Music/Allegaeon/Concerto\\ in\\ Dm/01\\ Concerto\\ in\\ Dm.mp3";
   const id3Tags = await ffprobeTags(file, ["album", "artist", "title", "track"]);
   expect(id3Tags).toEqual({
     "album": "Concerto in Dm",
