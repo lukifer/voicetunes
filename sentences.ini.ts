@@ -75,13 +75,13 @@ genre = (${genreKeys.join(" | ")}){genre}
 <PlayTrack.playaction> [(some | genre)] <PlayGenreBest.genre> ${fromDecade} <PlayGenreBest.decade>
 <PlayTrack.playaction> [some] <PlayGenreBest.decade> <PlayGenreBest.genre>
 
-[PlayYear]
-<PlayTrack.playaction> (something | [some] music | a track | tracks) ${fromYear} <PlayGenreBest.year>
-<PlayTrack.playaction> (something | [some] music | a track | tracks) ${fromDecade} <PlayGenreBest.decade>
-
 [PlayYearBest]
 <PlayTrack.playaction> ([the] best | some [thing] great | some [thing] awesome) [music] ${fromYear} <PlayGenreBest.year>
 <PlayTrack.playaction> ([the] best | some [thing] great | some [thing] awesome) [music] ${fromDecade} <PlayGenreBest.decade>
+
+[PlayYear]
+<PlayTrack.playaction> (something | [some] music | a track | tracks) ${fromYear} <PlayGenreBest.year>
+<PlayTrack.playaction> (something | [some] music | a track | tracks) ${fromDecade} <PlayGenreBest.decade>
 
 [PlayAlbumYear]
 <PlayTrack.playaction> [an] album ${fromYear} <PlayGenreBest.year>
@@ -101,6 +101,11 @@ what is the last log entry
 [WhatIsTime]
 what time is it
 what is the time
+
+[WhatIsPlaying]
+what is playing [right now]
+what [track | song | artist] is this
+who is this
 
 [JumpToTrack]
 tracknum = (1..30){tracknum}

@@ -6,6 +6,8 @@ import { dbRaw }                   from "../db";
 import { doIntent, playTracks }    from "../intent";
 import { locationUriToPath, wait } from "../utils";
 
+import SFX from "../sfx";
+
 import {
   allegaeonConcertoEp,
   danseFiles,
@@ -30,6 +32,7 @@ import {
   shufflePlaylistDanse,
   startPlaylistDanse,
   seventhAlbumByAllegaeon,
+  whatIsPlaying,
 } from "./mockIntents";
 
 const basePath = "/home/pi/music/";
@@ -239,6 +242,19 @@ test("handles a 'play some swing from the fifties' intent", async () => {
 test("handles a 'play best of nineteen sixty five' intent", async () => {
   await doIntent(bestOfSixtyFive);
   expectTracksAdded([`${basePathUri}Compilations/Pulp%20Fiction/13%20Flowers%20On%20The%20Wall.mp3`]);
+});
+
+test("handles a 'what is playing' intent", async () => {
+  const {mockMopidy} = (global as any);
+  SFX.speak = jest.fn();
+  mockMopidy.tracklist.getTracks = jest.fn().mockImplementation(() => [
+    { uri: `${itunesPath}${locationUriToPath(danseFiles[3])}` },
+  ]);
+
+  await doIntent(whatIsPlaying);
+  expect(SFX.speak).toHaveBeenCalledWith("Shake Your Tailfeathers by Ray Charles");
+
+  mockMopidy.tracklist.getTracks = jest.fn(() => []);
 });
 
 test("previous track returns to start of track after a cutoff", async () => {

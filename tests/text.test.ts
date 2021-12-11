@@ -20,6 +20,7 @@ import {
   shufflePlaylistDanse,
   startPlaylistDanse,
   seventhAlbumByAllegaeon,
+  whatIsPlaying,
 } from "./mockIntents";
 
 jest.mock("mopidy", () => {
@@ -101,4 +102,8 @@ test("parses 'play best of nineteen sixty five'", async () => {
 
 test("parses 'previous track'", async () => {
   expect(await getIntent(previousTrack)).toMatchObject(previousTrack);
+});
+
+test("parses 'what is playing'", async () => {
+  expect(await getIntent(whatIsPlaying)).toMatchObject(whatIsPlaying);
 });

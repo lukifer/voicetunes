@@ -257,6 +257,7 @@ export type MessageIntent =
 | "Resume"
 | "Stop"
 | "WhatIsTime"
+| "WhatIsPlaying"
 | "Nevermind"
 ;
 
@@ -369,6 +370,7 @@ export interface MessageMisc extends MessageBase {
             | "SaveTracklist"
             | "WhatIsPlaying"
             | "WhatIsTime"
+            | "WhatIsPlaying"
             | "Nevermind"
             ;
 }

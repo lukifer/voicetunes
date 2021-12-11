@@ -36,12 +36,18 @@ export function mqtt(ip: string) {
 export const escQuotes = (str: string) => str.replace(/["]/g, '\\"')
 
 export async function ffprobeTags(file: string, tags: string[]) {
-  const flags = `-show_entries format_tags=${tags.join(',')} -v 16`;
-  const { stdout } = await execp(
-    `ffprobe ${flags} -of default=noprint_wrappers=1:nokey=1 "${escQuotes(file)}"`
-  );
+  // ffprobe returns values in the following fixed order:
+  const orderedTags = [
+    "title",
+    "artist",
+    "album",
+    "track",
+  ].filter(t => tags.includes(t))
+  const flags = `-show_entries format_tags=${orderedTags.join(',')} -v 16`;
+  const cmd = `ffprobe ${flags} -of default=noprint_wrappers=1:nokey=1 "${escQuotes(file)}"`;
+  const { stdout } = await execp(cmd);
   const result = stdout.split("\n");
-  return tags.reduce((out, tag, n) => ({ ...out, [tag]: result[n] }), {} as Record<string, string>);
+  return orderedTags.reduce((out, tag, n) => ({ ...out, [tag]: result[n] }), {} as Record<string, string>);
 }
 
 export const locationUriToPath = (uri: string) => decodeURIComponent(uri.replace(/^file:\/\//, ""));

@@ -1263,3 +1263,28 @@ export const jumpToTrackThree = {
     "tracknum": 3
   }
 } as MessageBase;
+
+export const whatIsPlaying = {
+  "text": "what is playing",
+  "intent": {
+    "name": "WhatIsPlaying",
+    "confidence": 1
+  },
+  "entities": [],
+  "raw_text": "what is playing",
+  "tokens": [
+    "what",
+    "is",
+    "playing"
+  ],
+  "raw_tokens": [
+    "what",
+    "is",
+    "playing"
+  ],
+  "wav_seconds": null,
+  "transcribe_seconds": null,
+  "speech_confidence": null,
+  "wav_name": null,
+  "slots": {},
+} as MessageBase;
