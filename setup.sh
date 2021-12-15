@@ -9,10 +9,11 @@ sudo npm install -g typescript ts-node nodemon
 npm i
 
 # Install voice2json
-wget https://github.com/synesthesiam/voice2json/releases/download/v2.0/voice2json_2.0_armhf.deb
-sudo apt install ./voice2json_2.0_armhf.deb
+wget https://github.com/synesthesiam/voice2json/releases/download/v2.1/voice2json_2.1_armhf.deb
+sudo apt install ./voice2json_2.1_armhf.deb
 
 touch log.txt && chmod 777 log.txt
+[ ! -f cache.local.json ]  && echo "{}" > cache.local.json
 [ ! -f config.local.json ] && echo "{}" > config.local.json
 
 # Install voice profile
