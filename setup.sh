@@ -9,8 +9,12 @@ sudo npm install -g typescript ts-node nodemon
 npm i
 
 # Install voice2json
-wget https://github.com/synesthesiam/voice2json/releases/download/v2.1/voice2json_2.1_armhf.deb
-sudo apt install ./voice2json_2.1_armhf.deb
+arch="$([[ $(uname -m) = "aarch64" ]] && echo "arm64" || echo "armhf")"
+wget "https://github.com/synesthesiam/voice2json/releases/download/v2.1/voice2json_2.1_$arch.deb"
+sudo apt install "./voice2json_2.1_$arch.deb"
+
+# 64-bit installs may need this:
+# sudo ln -s /usr/lib/aarch64-linux-gnu/libffi.so.7 /usr/lib/aarch64-linux-gnu/libffi.so.6
 
 touch log.txt && chmod 777 log.txt
 [ ! -f cache.local.json ]  && echo "{}" > cache.local.json
