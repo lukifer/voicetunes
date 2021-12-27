@@ -15,11 +15,11 @@ const execp = promisify(exec);
 let audiohw = "";
 export async function init(device: string) {
   audiohw = device ? `-D ${device}` : "";
-  await execp(`mkdir -p ${PATH_RAMDISK}`);
-  await execp(`sudo mount -t tmpfs -o size=50m myramdisk ${PATH_RAMDISK}`);
-  [WAV_BEEP, WAV_ERROR, WAV_OK, WAV_UNRECOGNIZED].map(async (f) => {
-    f && await execp(`cp ./sounds/${f}.wav ${PATH_RAMDISK}/`);
-  });
+  // await execp(`mkdir -p ${PATH_RAMDISK}`);
+  // await execp(`sudo mount -t tmpfs -o size=50m myramdisk ${PATH_RAMDISK}`);
+  // [WAV_BEEP, WAV_ERROR, WAV_OK, WAV_UNRECOGNIZED].map(async (f) => {
+  //   f && await execp(`cp ./sounds/${f}.wav ${PATH_RAMDISK}/`);
+  // });
 }
 
 export async function play(sound: string) {

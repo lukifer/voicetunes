@@ -14,6 +14,7 @@ const {
   KEY_RIGHT,
   KEY_PLAY,
   KEY_LISTEN,
+  WALKIE_TALKIE,
 } = config;
 
 const buttons = {
@@ -26,10 +27,14 @@ const buttons = {
   LISTEN_DONE:  KEY_LISTEN,
 }
 
+type BtButton = keyof typeof buttons;
+type BtButtonListeners = Partial<Record<BtButton, () => void>>;
+
+let isListening      = false;
 let buttonTimers     = {};
 let buttonPressCount = {};
 
-const clearButtonTimer = (k) => {
+const clearButtonTimer = (k: BtButton) => {
   //console.log("clearButtonTimer", k, !!buttonTimers[k]);
   if(buttonTimers[k]) clearTimeout(buttonTimers[k]);
   buttonTimers[k] = false;
@@ -40,12 +45,9 @@ const resolveMultiClick = async (k: string, cmd: string) => {
   doIntent(await textToIntent(cmd));
 };
 
-type BtButtons = keyof typeof buttons;
-type BtButtonListeners = Partial<Record<BtButtons, () => void>>;
-
-const mapButtonCodesToNames = Object.keys(buttons).reduce((acc, k) => (
+const mapButtonCodesToNames = Object.keys(buttons).reduce((acc, k: BtButton) => (
   { ...acc, [buttons[k]]: k }
-), {});
+), {} as Record<number, BtButton>);
 
 export async function btConnect() {
   return new Promise((resolve, _reject) => {
@@ -86,11 +88,9 @@ export async function listen(buttonCallbacks: BtButtonListeners) {
     if(isDown) {
       //console.log(keyCode, KEY_LISTEN, keyCode === KEY_LISTEN);
       //console.log(keyName+" hasMultiClickCmd="+hasMultiClickCmd, "hasTimeout="+!!buttonTimers[keyName]);
-      if(keyCode === KEY_LISTEN && buttonCallbacks.LISTEN_START) {
-        //console.log("LISTEN_START");
+      if(WALKIE_TALKIE && keyCode === KEY_LISTEN && buttonCallbacks.LISTEN_START) {
         return buttonCallbacks.LISTEN_START();
       } else if(hasMultiClickCmd && buttonTimers[keyName]) {
-        //console.log("we willz clear!!!");
         clearButtonTimer(keyName);
       }
       return; // Listen uses "walkie-talkie" mode; other actions trigger on keyup only
@@ -99,7 +99,13 @@ export async function listen(buttonCallbacks: BtButtonListeners) {
       //console.log("singleClick fire="+keyName);
       clearButtonTimer(keyName);
       buttonPressCount[keyName] = 0;
-      buttonCallbacks[keyName]();
+      if (!WALKIE_TALKIE && keyCode === KEY_LISTEN) {
+        if (isListening) buttonCallbacks.LISTEN_START();
+        else             buttonCallbacks.LISTEN_DONE();
+        isListening = !isListening;
+      } else {
+        buttonCallbacks[keyName]();
+      }
     }
 
     if(hasMultiClickCmd) {

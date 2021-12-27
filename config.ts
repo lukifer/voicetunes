@@ -74,6 +74,7 @@ const configDefaults = {
   USE_LED: false,
   VOICE2JSON_BIN: "voice2json",
   VOICE2JSON_PROFILE: "/home/pi/.config/voice2json",
+  WALKIE_TALKIE: true,
   WAV_BEEP: "",
   WAV_ERROR: "",
   WAV_OK: "",
@@ -84,7 +85,8 @@ const configDefaults = {
 const config = Object.assign(
   {},
   configDefaults,
-  readJson(`${__dirname}/config.local.json`)
+  readJson(`${__dirname}/config.local.json`),
+  readJson(`${__dirname}/substitutions.local.json`)
 ) as typeof configDefaults;
 
 export default {
