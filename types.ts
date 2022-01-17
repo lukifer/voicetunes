@@ -258,6 +258,7 @@ export type MessageIntent =
 | "Stop"
 | "WhatIsTime"
 | "WhatIsPlaying"
+| "RestartMopidy"
 | "Nevermind"
 ;
 
@@ -371,6 +372,7 @@ export interface MessageMisc extends MessageBase {
             | "WhatIsPlaying"
             | "WhatIsTime"
             | "WhatIsPlaying"
+            | "RestartMopidy"
             | "Nevermind"
             ;
 }

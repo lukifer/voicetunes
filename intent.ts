@@ -17,7 +17,7 @@ import {
   execp,
   ffprobeTags,
   locationUriToPath,
-  // mqtt,
+  mqtt,
   readJson,
   removeNth,
   rnd,
@@ -49,8 +49,8 @@ const {
   ALIAS,
   DEFAULT_ACTION,
   MAX_QUEUED_TRACKS,
-  // MQTT_IP,
-  // MQTT_PASSTHROUGH_INTENTS,
+  MQTT_IP,
+  MQTT_PASSTHROUGH_INTENTS,
   PATH_MUSIC,
   MIN_RATING,
   MIN_RATING_BEST,
@@ -394,10 +394,10 @@ export async function doIntent(raw: MessageBase) {
     //   SFX.speak(log.stdout);
     //   break;
 
-    // case "RestartMopidy":
-    //   //TODO
-    //   break;
-    //
+    case "RestartMopidy":
+      await execp("sudo service mopidy restart");
+      break;
+
     // case "Retrain":
     //   await train();
     //   break;
@@ -423,12 +423,12 @@ export async function doIntent(raw: MessageBase) {
     //   break;
 
     default:
-      // if(MQTT_PASSTHROUGH_INTENTS.includes(msg.intentName)) {
-      //   mqtt(MQTT_IP).publish("voice2json", msg.toString());
-      // } else {
-      //   LED.flashErr();
-      //   return err("command unrecognized", msg);
-      // }
+      if(MQTT_PASSTHROUGH_INTENTS.includes((msg as any).intentName as string)) {
+        mqtt(MQTT_IP).publish("voice2json", JSON.stringify(msg));
+      } else {
+        LED.flashErr();
+        return err("command unrecognized", msg);
+      }
   }
 }
 

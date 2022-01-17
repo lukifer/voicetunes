@@ -166,6 +166,7 @@ shut down device
 
 [RestartMopidy]
 restart music player
+restart music server
 
 [Nevermind]
 nevermind
