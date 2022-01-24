@@ -6,6 +6,9 @@ const configDefaults = {
   AUDIO_DEVICE_IN: "ac108",
   AUDIO_DEVICE_OUT: "dmixer",
   BT_BUTTON_NAME: "Tunai Button",
+  BT_BYTE_IS_DOWN: 28,
+  BT_BYTE_KEY_CODE: 12,
+  BT_USAGE_PAGE: false,
   BT_DEVICE_EVENT: "/dev/input/event0",
   CLICK_DELAY_MS: 500,
   CLICK_DOUBLE: {

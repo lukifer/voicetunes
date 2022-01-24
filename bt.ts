@@ -4,7 +4,10 @@ import { doIntent, textToIntent } from "./intent";
 import config from "./config";
 const {
   BT_BUTTON_NAME,
+  BT_BYTE_IS_DOWN,
+  BT_BYTE_KEY_CODE,
   BT_DEVICE_EVENT,
+  BT_USAGE_PAGE,
   CLICK_DELAY_MS,
   CLICK_DOUBLE,
   CLICK_TRIPLE,
@@ -31,6 +34,7 @@ type BtButton = keyof typeof buttons;
 type BtButtonListeners = Partial<Record<BtButton, () => void>>;
 
 let isListening      = false;
+let lastListenTime   = 0;
 let buttonTimers     = {};
 let buttonPressCount = {};
 
@@ -53,7 +57,10 @@ export async function btConnect() {
   return new Promise((resolve, _reject) => {
     const doConnect = () => {
       const hidDevices = HID.devices();
-      if(hidDevices.find(x => x.product === BT_BUTTON_NAME)) {
+      //console.log({BT_BUTTON_NAME})
+      //console.log(hidDevices)
+      //console.log(hidDevices.map(x => x.product).join(','))
+      if(hidDevices.find(x => x.product === BT_BUTTON_NAME && (!BT_USAGE_PAGE || x.usagePage === BT_USAGE_PAGE))) {
         resolve(new HID.HID(BT_DEVICE_EVENT || "/dev/input/event0"));
       } else {
         setTimeout(() => doConnect(), 3000);
@@ -71,15 +78,22 @@ export async function connect() {
 export async function listen(buttonCallbacks: BtButtonListeners) {
   if(!btRemote) await connect();
   btRemote.on("data", async function(data: Buffer) {
+    // console.log("----data-----")
     // FIXME: there's likely a performanter way to do this
     const press   = data.map(x => x);
-    const isDown  = press[28];
-    const keyCode = press[12];
+    //if(0)press.forEach((foo, n) => {
+    //  console.log(n, foo)
+    //})
+    const isDown  = press[BT_BYTE_IS_DOWN];
+    const keyCode = press[BT_BYTE_KEY_CODE];
     const keyName = mapButtonCodesToNames[keyCode];
+
+    //console.log(keyName, keyCode, "isDown="+isDown);
 
     if(!buttonCallbacks[keyName]) return;
 
-    //console.log(keyName, "isDown="+isDown);
+    // FIXME: WTF
+    //if(keyCode === KEY_LISTEN && press[10] != 9) return;
 
     const doubleClickCmd = CLICK_DOUBLE[keyName];
     const tripleClickCmd = CLICK_TRIPLE[keyName];
@@ -89,20 +103,32 @@ export async function listen(buttonCallbacks: BtButtonListeners) {
       //console.log(keyCode, KEY_LISTEN, keyCode === KEY_LISTEN);
       //console.log(keyName+" hasMultiClickCmd="+hasMultiClickCmd, "hasTimeout="+!!buttonTimers[keyName]);
       if(WALKIE_TALKIE && keyCode === KEY_LISTEN && buttonCallbacks.LISTEN_START) {
-        return buttonCallbacks.LISTEN_START();
+        const now = + new Date();
+        //console.log({lastListenTime}, now - lastListenTime);
+        if (lastListenTime && (now - lastListenTime < 500)) return;
+        lastListenTime = now;
+        //return buttonCallbacks.LISTEN_START();
       } else if(hasMultiClickCmd && buttonTimers[keyName]) {
         clearButtonTimer(keyName);
       }
+      //console.log("ignoring keydown")
       return; // Listen uses "walkie-talkie" mode; other actions trigger on keyup only
     }
     const singleClick = () => {
       //console.log("singleClick fire="+keyName);
       clearButtonTimer(keyName);
       buttonPressCount[keyName] = 0;
+      //console.log('singleClick '+keyCode, 'KEY_LISTEN='+KEY_LISTEN)
       if (!WALKIE_TALKIE && keyCode === KEY_LISTEN) {
+        const now = + new Date();
+        //console.log({lastListenTime}, now - lastListenTime);
+        if (lastListenTime && (now - lastListenTime < 500)) return;
+        lastListenTime = now;
+
+        isListening = !isListening;
+        //console.log({isListening}, "will "+(isListening ? "start" : "stop"))
         if (isListening) buttonCallbacks.LISTEN_START();
         else             buttonCallbacks.LISTEN_DONE();
-        isListening = !isListening;
       } else {
         buttonCallbacks[keyName]();
       }

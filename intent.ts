@@ -313,7 +313,7 @@ export async function doJumpToTrack(msg: MessageJumpToTrack) {
 }
 
 export async function doIntent(raw: MessageBase) {
-  // console.log('doIntent', doIntent)
+  // console.log('doIntent', raw)
   if(!raw?.text || !raw?.intent?.name || !raw.slots) {
     SFX.unrecognized();
     return err("no intent", raw);
