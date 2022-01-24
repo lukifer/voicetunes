@@ -8,7 +8,7 @@ const configDefaults = {
   BT_BUTTON_NAME: "Tunai Button",
   BT_BYTE_IS_DOWN: 28,
   BT_BYTE_KEY_CODE: 12,
-  BT_USAGE_PAGE: false,
+  BT_USAGE_PAGE: null as null | number,
   BT_DEVICE_EVENT: "/dev/input/event0",
   CLICK_DELAY_MS: 500,
   CLICK_DOUBLE: {
