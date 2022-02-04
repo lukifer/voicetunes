@@ -1,5 +1,5 @@
 declare module "mopidy" {
-  type addArgs = {
+  type MopidyAddArgs = {
     uris: string[];
     at_position?: number;
   };
@@ -51,12 +51,12 @@ declare module "mopidy" {
       getTimePosition: ()              => Promise<number>,
     };
     tracklist: {
-      add:       (args: addArgs)  => Promise<void>,
-      clear:     ()               => Promise<void>,
-      shuffle:   (args: number[]) => Promise<void>,
-      getTracks: ()               => Promise<MopidyTrack[]>,
-      getLength: ()               => Promise<number>,
-      index:     ()               => Promise<number>,
+      add:       (args: MopidyAddArgs)  => Promise<void>,
+      clear:     ()                     => Promise<void>,
+      shuffle:   (args: number[])       => Promise<void>,
+      getTracks: ()                     => Promise<MopidyTrack[]>,
+      getLength: ()                     => Promise<number>,
+      index:     ()                     => Promise<number>,
     };
   }
 

@@ -6,6 +6,8 @@ const configDefaults = {
   AUDIO_DEVICE_IN: "ac108",
   AUDIO_DEVICE_OUT: "dmixer",
   BT_BUTTON_NAME: "Tunai Button",
+  BT_BYTE_IS_DOWN: 28,
+  BT_BYTE_KEY_CODE: 12,
   BT_DEVICE_EVENT: "/dev/input/event0",
   CLICK_DELAY_MS: 500,
   CLICK_DOUBLE: {
@@ -61,7 +63,10 @@ const configDefaults = {
   PATH_DATABASE: "./itunes.sqlite3",
   PATH_MUSIC: "/home/pi/music",
   PATH_RAMDISK: "/tmp/ramdisk",
+  PLAYER: "mopidy" as "mopidy" | "applemusic",
   PREV_TRACK_MS: 15000,
+  REC_BIN: "sudo arecord -q -t raw --duration=20 --rate=16000 --format=S16_LE",
+  RECSTOP_BIN: "sudo killall -q arecord",
   STARTING_YEAR: 1900,
   SUBSTITUTIONS: {
     albums: {},

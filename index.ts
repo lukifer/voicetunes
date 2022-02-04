@@ -23,6 +23,7 @@ const {
   DENOISE_SOX,
   MIN_LISTEN_DURATION_MS,
   PATH_RAMDISK,
+  REC_BIN,
   URL_MOPIDY,
   VOICE2JSON_BIN,
 } = config;
@@ -92,7 +93,7 @@ async function startListening() {
   LED.startSpinSlow();
   SFX.beep();
   let { stdout } = await execp([
-    `sudo arecord -q -D ${AUDIO_DEVICE_IN} -t raw --duration=20 --rate=16000 --format=S16_LE`,
+    REC_BIN || `sudo arecord -q -D ${AUDIO_DEVICE_IN} -t raw --duration=20 --rate=16000 --format=S16_LE`,
     `tee ${PATH_RAMDISK}/input.raw`,
     `${VOICE2JSON_BIN} transcribe-stream -c 1 -a -`,
     `tee ${PATH_RAMDISK}/input.txt`,

@@ -1076,6 +1076,105 @@ export const albumBannedOnVulcan = {
   }
 } as MessageBase;
 
+export const albumBannedOnVulcanTrack2 = {
+  "text": "play the album banned on vulcan and jump to the second track",
+  "intent": {
+    "name": "PlayAlbum",
+    "confidence": 1
+  },
+  "entities": [
+    {
+      "entity": "playaction",
+      "value": "play",
+      "raw_value": "play",
+      "source": "",
+      "start": 0,
+      "raw_start": 0,
+      "end": 4,
+      "raw_end": 4,
+      "tokens": [
+        "play"
+      ],
+      "raw_tokens": [
+        "play"
+      ]
+    },
+    {
+      "entity": "album",
+      "value": "banned on vulcan",
+      "raw_value": "banned on vulcan",
+      "source": "",
+      "start": 15,
+      "raw_start": 15,
+      "end": 31,
+      "raw_end": 31,
+      "tokens": [
+        "banned",
+        "on",
+        "vulcan"
+      ],
+      "raw_tokens": [
+        "banned",
+        "on",
+        "vulcan"
+      ]
+    },
+    {
+      "entity": "trackord",
+      "value": "second",
+      "raw_value": "second",
+      "source": "",
+      "start": 48,
+      "raw_start": 48,
+      "end": 54,
+      "raw_end": 54,
+      "tokens": [
+        "second"
+      ],
+      "raw_tokens": [
+        "second"
+      ]
+    }
+  ],
+  "raw_text": "play the album banned on vulcan and jump to the second track",
+  "tokens": [
+    "play",
+    "the",
+    "album",
+    "banned",
+    "on",
+    "vulcan",
+    "and",
+    "jump",
+    "to",
+    "the",
+    "second",
+    "track"
+  ],
+  "raw_tokens": [
+    "play",
+    "the",
+    "album",
+    "banned",
+    "on",
+    "vulcan",
+    "and",
+    "jump",
+    "to",
+    "the",
+    "second",
+    "track"
+  ],
+  "wav_seconds": null,
+  "transcribe_seconds": null,
+  "speech_confidence": null,
+  "wav_name": null,
+  "slots": {
+    "playaction": "play",
+    "album": "banned on vulcan"
+  }
+} as MessageBase;
+
 export const junoReactorAlbum = {
   "text": "play an album by juno reactor",
   "intent": {

@@ -7,6 +7,7 @@ import {
   acesHighByIronMaiden,
   acesHighBySteveAndSeagulls,
   albumBannedOnVulcan,
+  albumBannedOnVulcanTrack2,
   bestOfAllegaeon,
   bestOfSixtyFive,
   bestProgRockAughtThree,
@@ -61,6 +62,10 @@ test("parses 'play seventh album by allegaeon'", async () => {
 
 test("parses 'play the album banned on vulcan'", async () => {
   expect(await getIntent(albumBannedOnVulcan)).toMatchObject(albumBannedOnVulcan);
+});
+
+test("parses 'play the album banned on vulcan and jump to the second track'", async () => {
+  expect(await getIntent(albumBannedOnVulcanTrack2)).toMatchObject(albumBannedOnVulcanTrack2);
 });
 
 test("parses 'play an album by juno reactor'", async () => {

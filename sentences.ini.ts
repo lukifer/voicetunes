@@ -1,5 +1,6 @@
-import * as fs from "fs";
-import {sql}   from "@databases/sqlite";
+import * as fs       from "fs";
+import {sql}         from "@databases/sqlite";
+import writtenNumber from "written-number";
 
 import {dbQuery} from "./db";
 import {readJson} from "./utils";
@@ -18,6 +19,8 @@ const decades      = readJson("./data/decades.json") as NumberMap;
 const ordinalWords = readJson("./data/ordinalWords.json");
 
 const ordinalLabels = ordinalWords.map((x: string[]) => x[1]);
+
+const numbers = [...Array(30)].map(n => writtenNumber(n).replace(/-/g, " "));
 
 async function get(which: EntityFilterType) {
   const sentences = await dbQuery(sql`SELECT sentence FROM ${sql.ident(`vox_${which}`)}`) as VoxSentence[] || []
@@ -58,7 +61,13 @@ albumnum = (latest | ${ordinalLabels.join(" | ")}){albumnum}
 <PlayTrack.playaction> [the] <albumnum> <PlayArtist.artist> album
 
 [PlayAlbum]
+<PlayTrack.playaction> [the] album <album> (starting | beginning) (at | with) [the] <trackord> track
+<PlayTrack.playaction> [the] album <album> (starting | beginning) (at | with) track <tracknum>
+<PlayTrack.playaction> [the] album <album> [and] (jump | go) [to] [the] <trackord> track
+<PlayTrack.playaction> [the] album <album> [and] (jump | go) [to] track <tracknum>
 <PlayTrack.playaction> [the] album <album>
+trackord = (${ordinalLabels.join(" | ")}){trackord}
+tracknum = (${numbers.join(" | ")}){tracknum}
 album = (${albumKeys.join(" | ")}){album}
 
 [PlayGenreBest]

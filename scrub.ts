@@ -2,6 +2,7 @@ import removeAccents from "remove-accents";
 import writtenNumber from "written-number";
 import {readJson} from "./utils";
 import {
+  StringTuple,
   StringReplaceTuple,
   ArtistSentence,
   AlbumSentence,
@@ -42,17 +43,22 @@ const wordSubstitutions: StringReplaceTuple[] = Object.keys(substitutions.words 
   .reduce((acc, word) => [
     ...acc,
     [new RegExp(`\\b${word}\\b`, "g"), substitutions.words[word]]
-  ], [] as StringReplaceTuple[]);
+  ], [] as StringReplaceTuple[])
+  ;
 
 const ordinalWordsJson = readJson("./data/ordinalWords.json");
 const ordinalWords = ordinalWordsJson.reverse() as StringReplaceTuple[];
 
-const romanNumerals = readJson("./data/romanNumerals.json");
-const romanNumeralsRegex: StringReplaceTuple[] = romanNumerals.map((x: StringReplaceTuple) => (
-  [ new RegExp(x[0]), x[1] ])
-);
-
 const numberWords = (x: string) => ` ${writtenNumber(parseInt(x), {noAnd: true}).replace(/-/g, " ")} `;
+
+const romanNumerals = readJson("./data/romanNumerals.json") as string[];
+const romanNumeralsRegex: StringReplaceTuple[] =
+  romanNumerals.reduce((acc: StringReplaceTuple[], roman, n) => [
+    ...acc,
+    [ new RegExp(`\\s${roman}$`), ` ${numberWords(`${n+1}`)}` ],
+    [ new RegExp(`\\s${roman}:`), ` ${numberWords(`${n+1}`)}` ],
+  ], [] as StringReplaceTuple[])
+  ;
 
 export function scrub(str: string) {
   return removeAccents(str.toLowerCase())
@@ -69,7 +75,8 @@ export function scrubTrackName(trackName: string): TrackSentence {
   const trackNameBase = (substitutions.tracks[trackName] || trackName)
     .replace(/\(?Pt\.\s([0-9])\)?$/, "Part $1")
     .replace(/No\.\s?([0-9])/, "Number $1")
-    .replace(/\[.+$/, "");
+    .replace(/\[.+$/, "")
+    ;
   return scrub(trackNameBase.toLowerCase())
     .replaceAll(ordinalWords)
     .replaceAll(romanNumeralsRegex)
