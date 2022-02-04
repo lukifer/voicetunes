@@ -2,7 +2,7 @@ import Shuffler from "shuffle-array";
 import { sql }  from "@databases/sqlite";
 
 import config     from "./config";
-import { mopidy } from "./index";
+import { player } from "./index";
 import * as LED   from "./led";
 import SFX        from "./sfx";
 
@@ -54,7 +54,6 @@ const {
   MIN_RATING,
   MIN_RATING_BEST,
   PATH_MUSIC,
-  PLAYER,
   PREV_TRACK_MS,
   USE_LED,
   VOICE2JSON_BIN,
@@ -297,13 +296,12 @@ export async function doPlayYear(msg: MessagePlayYear, best = false) {
 }
 
 export async function doJumpToTrack(msg: Pick<MessageJumpToTrack, "slots">) {
-  const { playback, tracklist } = mopidy;
   const { slots } = msg;
   if(!slots?.tracknum && !slots?.tracknumword) return err("no track", msg);
   const num = slots?.tracknum || (ordinalToNum[slots.tracknumword] + 1);
 
-  const currentTracks = await tracklist.getTracks();
-  const i = await tracklist.index();
+  const currentTracks = await player.getTracks();
+  const i = await player.currentTrackIndex();
   if (!currentTracks || !currentTracks[i])
     return err("current track not found", msg)
 
@@ -313,10 +311,10 @@ export async function doJumpToTrack(msg: Pick<MessageJumpToTrack, "slots">) {
   const trackNum = parseInt(current?.track)
   const diff = num - trackNum;
   if (trackNum && diff) {
-    await playback.pause();
-    if (diff > 0) for (let i = 0; i < diff; i++) await playback.next();
-    if (diff < 0) for (let i = 0; i > diff; i--) await playback.previous();
-    await playback.play();
+    await player.pause();
+    if (diff > 0) for (let i = 0; i < diff; i++) await player.next();
+    if (diff < 0) for (let i = 0; i > diff; i--) await player.previous();
+    await player.play();
   }
 }
 
@@ -348,8 +346,8 @@ export async function doIntent(raw: MessageBase) {
     case "NextTrack":     return await nextTrack();
     case "PreviousTrack": return await previousTrack();
 
-    case "Resume": return await mopidy.playback.resume();
-    case "Stop":   return await mopidy.playback.pause();
+    case "Resume": return await player.resume();
+    case "Stop":   return await player.pause();
 
     case "Nevermind": return await SFX.ok();
 
@@ -377,8 +375,8 @@ export async function doIntent(raw: MessageBase) {
       break;
 
     case "WhatIsPlaying":
-      const currentTracks = await mopidy.tracklist.getTracks();
-      const i = await mopidy.tracklist.index();
+      const currentTracks = await player.getTracks();
+      const i = await player.currentTrackIndex();
       const file = locationUriToPath(currentTracks[i].uri);
       const tags = await ffprobeTags(file, ["artist", "title"]);
       SFX.speak(`${tags.title} by ${tags.artist}`);
@@ -444,8 +442,7 @@ let loadingTimer: ReturnType<typeof setTimeout> | null = null;
 
 async function queueRemainingTracks(tracks: string[]) {
   const batch = 5;
-  const { tracklist } = mopidy;
-  await tracklist.add({ uris: tracks.slice(0, batch).map(file => `file://${PATH_MUSIC}/${file}`) });
+  await player.addTracks(tracks.slice(0, batch).map(file => `file://${PATH_MUSIC}/${file}`));
   if(tracks.length > batch) {
     await wait(250);
     await queueRemainingTracks(tracks.slice(batch));
@@ -453,7 +450,6 @@ async function queueRemainingTracks(tracks: string[]) {
 }
 
 export async function playTracks(tracks: string[], opts: PlayOptions = {}) {
-  const { playback, tracklist } = mopidy;
   const {
     jumpTo = 0,
     queue = false,
@@ -468,14 +464,14 @@ export async function playTracks(tracks: string[], opts: PlayOptions = {}) {
 
   // queue starting track (random or specific) and start playing immediately
   const playIdx = shuffle ? rnd(tracks.length) : jumpTo;
-  if(!queue) await tracklist.clear();
-  await tracklist.add({ "uris": [ `file://${PATH_MUSIC}/${tracks[playIdx]}` ] });
-  if(seekMs) await playback.seek([seekMs]);
+  if(!queue) await player.clearTracks();
+  await player.addTracks([ `file://${PATH_MUSIC}/${tracks[playIdx]}` ]);
+  if(seekMs) await player.seek(seekMs);
   if(!queue) {
-    await playback.play();
+    await player.play();
   }
   if(jumpTo > 0) {
-    await tracklist.add({ uris: tracks.slice(0, jumpTo), at_position: 0 });
+    await player.addTracks(tracks.slice(0, jumpTo), 0);
   }
   LED.stopSpin();
 
@@ -495,10 +491,9 @@ export async function playTracks(tracks: string[], opts: PlayOptions = {}) {
 }
 
 export async function doRestoreState() {
-  const { tracklist } = mopidy;
   const cache = readJson('cache.local.json') as PlayStateCache;
   if(cache?.tracks?.length) {
-    await tracklist.clear();
+    await player.clearTracks();
     await playTracks(cache.tracks, {
       jumpTo: cache.index,
       seekMs: cache.playbackPosition,
@@ -509,12 +504,11 @@ export async function doRestoreState() {
 }
 
 export async function doSaveState() {
-  const { tracklist } = mopidy;
-  const tracks = await tracklist.getTracks()
+  const tracks = await player.getTracks()
   if(tracks?.length) {
-    const pos = await mopidy.playback.getTimePosition();
+    const pos = await player.getTimePosition();
     writeCache({
-      index: await tracklist.index(),
+      index: await player.currentTrackIndex(),
       playbackPosition: (Math.max(pos - 5000, 0)),
       tracks: tracks.map(t => t.uri),
     });
@@ -522,60 +516,55 @@ export async function doSaveState() {
 }
 
 export async function previousTrack() {
-  const { playback, tracklist } = mopidy;
-  const pos = await playback.getTimePosition();
-  const idx = await tracklist.index();
+  const pos = await player.getTimePosition();
+  const idx = await player.currentTrackIndex();
   if(pos < PREV_TRACK_MS && idx > 0) {
-    await playback.previous();
+    await player.previous();
   } else {
-    await playback.seek([0]);
+    await player.seek(0);
   }
 }
 
 export async function nextTrack() {
-  await mopidy.playback.next();
+  await player.next();
 }
 
 // let cachedVolume: number | null = null;
 export async function togglePlayback() {
-  const { playback, tracklist } = mopidy;
-  // const { mixer, playback } = mopidy;
-  if("playing" === await playback.getState()) {
-    //cachedVolume = await mixer.getVolume();
+  if("playing" === await player.playerState()) {
+    //cachedVolume = await player.getVolume();
     //await transitionVolume(cachedVolume, 0);
-    return playback.pause();
+    return player.pause();
   } else {
-    if(await tracklist.getLength() === 0) {
+    if(await player.tracklistLength() === 0) {
       if(DEFAULT_ACTION) {
         const intent = await textToIntent(DEFAULT_ACTION);
         if(intent) doIntent(intent)
       }
     } else {
-      await playback.resume();
+      await player.resume();
     }
     //if(cachedVolume !== null) {
-    //  await transitionVolume(await mixer.getVolume(), cachedVolume);
+    //  await transitionVolume(await player.getVolume(), cachedVolume);
     //  cachedVolume = null;
     //}
   }
 }
 
 export async function changeVol(diff: number) {
-  const { mixer } = mopidy;
-  const oldVol = await mixer.getVolume();
+  const oldVol = await player.getVolume();
   const newVol = between(0, oldVol + diff, 100);
-  const setPromise = mixer.setVolume([newVol])
+  const setPromise = player.setVolume(newVol);
   LED.volumeChange(oldVol, newVol);
   return setPromise;
 }
 
 export async function setVol(newVol: number) {
-  const { mixer } = mopidy;
   if(USE_LED) {
-    const oldVol = await mixer.getVolume();
+    const oldVol = await player.getVolume();
     LED.volumeChange(oldVol, newVol);
   }
-  return mixer.setVolume([newVol])
+  return player.setVolume(newVol);
 }
 
 // FIXME: Mopidy has a volume change delay, and the Promise doesn't wait for it to resolve

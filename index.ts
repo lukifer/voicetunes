@@ -1,9 +1,9 @@
-import Mopidy from "mopidy";
 import { exec }      from "child_process";
 import { promisify } from "util";
 
-import * as LED      from "./led";
 import * as BT       from "./bt";
+import * as LED      from "./led";
+import { getPlayer } from "./player";
 import SFX           from "./sfx";
 import { now, wait } from "./utils";
 import config        from "./config";
@@ -24,21 +24,20 @@ const {
   MIN_LISTEN_DURATION_MS,
   PATH_RAMDISK,
   REC_BIN,
-  URL_MOPIDY,
   VOICE2JSON_BIN,
 } = config;
 
 const execp = promisify(exec);
 
-export const mopidy = new Mopidy({ webSocketUrl: URL_MOPIDY });
+export const player = getPlayer("mopidy");
 
-mopidy.on("state:online", async () => {
+player.start().then(async () => {
   SFX.init(AUDIO_DEVICE_OUT);
   LED.open();
 
   await BT.connect();
   LED.flair();
-  await mopidy.tracklist.clear();
+  await player.clearTracks();
   SFX.beep();
 
   BT.listen({
@@ -84,7 +83,7 @@ let listenDurationMs     = 0;
 
 async function startListening() {
   listenStartTimestamp = now();
-  await mopidy.playback.pause();
+  await player.pause();
   // FIXME: SIG_STOP
   await execp(`if pgrep arecord;    then sudo killall -q arecord;    fi`);
   await execp(`if pgrep voice2json; then sudo killall -q voice2json; fi`);

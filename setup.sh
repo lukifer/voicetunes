@@ -16,6 +16,8 @@ sudo apt install "./voice2json_2.1_$arch.deb"
 # 64-bit installs may need this:
 # sudo ln -s /usr/lib/aarch64-linux-gnu/libffi.so.7 /usr/lib/aarch64-linux-gnu/libffi.so.6
 
+# https://gitlab.ethz.ch/aweichbrodt/seeed-voicecard/-/tree/linux-4.19-or-less/pulseaudio
+
 touch log.txt && chmod 777 log.txt
 [ ! -f cache.local.json ]  && echo "{}" > cache.local.json
 [ ! -f config.local.json ] && echo "{}" > config.local.json
