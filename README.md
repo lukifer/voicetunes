@@ -1,7 +1,7 @@
 # voicetunes
-Voice-controlled car audio player, powered by Raspberry Pi, [voice2json](https://voice2json.org), and [Mopidy](https://mopidy.com). Also supports a plaintext listener, via MQTT.
+Voice-controlled jukebox, targeted at car audio, and entirely offline/cloud-free. Powered by Raspberry Pi, [voice2json](https://voice2json.org), and [Mopidy](https://mopidy.com). Also supports a plaintext listener, locally or over a network, via MQTT.
 
-Rather than using a wake-word (which has a delay, and might result in false positives from music), this project uses a Bluetooth media controller, in "walkie-talkie" mode (press to talk, release to execute).
+Rather than using a wake-word (which has a delay, and might result in false positives from music), this project uses a Bluetooth media controller, with an optional "walkie-talkie" mode (press to talk, release to execute).
 
 ## Example Voice Commands
 
@@ -34,8 +34,8 @@ sudo ./setup.sh
 To run at startup (and auto-restart on a fatal error), run `sudo crontab -e` and add:
 
 ```
-@reboot cd /home/pi/voicetunes/; ./ramdisk.sh; sudo npm run start
-* * * * * cd /home/pi/voicetunes/; sudo npm run start
+@reboot cd /home/pi/voicetunes/; ./ramdisk.sh; sudo ./go.sh
+* * * * * cd /home/pi/voicetunes/; sudo ./go.sh
 ```
 
 I use the [Respeaker 4-Mic HAT](https://wiki.seeedstudio.com/ReSpeaker_4_Mic_Array_for_Raspberry_Pi/), but any ALSA or Pulse mic input should work. If not using the Respeaker, set `{ "USE_LED": false }` in `config.local.json`.
@@ -95,11 +95,10 @@ rsync -az ~/Music/iTunes/iTunes\ Media/Music/ pi@raspberrypi.local:/home/pi/musi
 # TODO
 
 - Command: "Clear queue"
-- Command to identify current track
-- Command: "Jump to track \<N\>"
 - Command: "Play the \<Nth\> track from \<album\>"
 - Command: "Play a new track by \<artist>\"
 - Replace `exec` calls with Node sockets and pipes
+- Option to play back directly on iTunes/Music.app (via Applescript/JXA)
 - Option to use [mopidy local](https://mopidy.com/ext/local/) library and native M3U playlists
 - Option to cache entire voice2json profile to RAM disk
 - Option to cache entire SQLite db to RAM disk
