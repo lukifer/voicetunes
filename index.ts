@@ -87,8 +87,8 @@ async function startListening() {
   // FIXME: SIG_STOP
   await execp(`if pgrep arecord;    then sudo killall -q arecord;    fi`);
   await execp(`if pgrep voice2json; then sudo killall -q voice2json; fi`);
-  await execp(`if pgrep sox;        then sudo killall -q sox;        fi`);
-  await execp(`if pgrep rnnoise;    then sudo killall -q rnnoise;    fi`);
+  //await execp(`if pgrep sox;        then sudo killall -q sox;        fi`);
+  //await execp(`if pgrep rnnoise;    then sudo killall -q rnnoise;    fi`);
   LED.startSpinSlow();
   SFX.beep();
   let { stdout } = await execp([
@@ -132,7 +132,8 @@ async function startListening() {
 async function stopListening() {
   listenDurationMs = now() - listenStartTimestamp;
   await wait(100); // a little trailing audio seems to help accuracy
-  await execp("sudo killall -q arecord");
+  //await execp("sudo killall -q arecord");
+  await execp(`if pgrep arecord; then sudo killall -q arecord; fi`);
   if(listenDurationMs < MIN_LISTEN_DURATION_MS) {
     LED.stopSpin();
   } else {
