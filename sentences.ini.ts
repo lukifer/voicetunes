@@ -61,12 +61,12 @@ albumnum = (latest | ${ordinalLabels.join(" | ")}){albumnum}
 <PlayTrack.playaction> [the] <albumnum> <PlayArtist.artist> album
 
 [PlayAlbum]
-<PlayTrack.playaction> [the] album <album> (starting | beginning) (at | with) [the] <trackord> track
+<PlayTrack.playaction> [the] album <album> (starting | beginning) (at | with) [the] <tracknumword> track
 <PlayTrack.playaction> [the] album <album> (starting | beginning) (at | with) track <tracknum>
-<PlayTrack.playaction> [the] album <album> [and] (jump | go) [to] [the] <trackord> track
+<PlayTrack.playaction> [the] album <album> [and] (jump | go) [to] [the] <tracknumword> track
 <PlayTrack.playaction> [the] album <album> [and] (jump | go) [to] track <tracknum>
 <PlayTrack.playaction> [the] album <album>
-trackord = (${ordinalLabels.join(" | ")}){trackord}
+tracknumword = (${ordinalLabels.join(" | ")}){tracknumword}
 tracknum = (${numbers.join(" | ")}){tracknum}
 album = (${albumKeys.join(" | ")}){album}
 

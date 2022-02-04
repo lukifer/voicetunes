@@ -15,6 +15,13 @@
 //   on: jest.fn(),
 // } as any as Partial<Mopidy>;
 
+export const bannedOnVulcan = [
+  `01%20Worf's%20Revenge%20(Klingon%20Rap).mp3`,
+  `02%20The%20U.S.S.%20Make-Shit-Up.mp3`,
+  `03%20The%20Sexy%20Data%20Tango.mp3`,
+  `04%20Screw%20the%20Okampa!%20(I%20Wanna%20Go%20Home).mp3`,
+].map(mp3 => `Voltaire/Banned%20on%20Vulcan/${mp3}`);
+
 export const allegaeonConcertoEp = [
   `01%20Concerto%20in%20Dm.mp3`,
   `02%20In%20Flanders%20Fields.mp3`,

@@ -51,9 +51,10 @@ const {
   MAX_QUEUED_TRACKS,
   MQTT_IP,
   MQTT_PASSTHROUGH_INTENTS,
-  PATH_MUSIC,
   MIN_RATING,
   MIN_RATING_BEST,
+  PATH_MUSIC,
+  PLAYER,
   PREV_TRACK_MS,
   USE_LED,
   VOICE2JSON_BIN,
@@ -202,6 +203,10 @@ export async function doPlayAlbum(msg: MessagePlayAlbum) {
   } else {
     // FIXME: handle multiple albums with the same name
     await playTracks(trackLocations(albumTracks), { queue });
+
+    if (slots.tracknum || slots.tracknumword) {
+      await doJumpToTrack({slots});
+    }
   }
 }
 
@@ -291,11 +296,11 @@ export async function doPlayYear(msg: MessagePlayYear, best = false) {
   }
 }
 
-export async function doJumpToTrack(msg: MessageJumpToTrack) {
+export async function doJumpToTrack(msg: Pick<MessageJumpToTrack, "slots">) {
   const { playback, tracklist } = mopidy;
   const { slots } = msg;
   if(!slots?.tracknum && !slots?.tracknumword) return err("no track", msg);
-  const num = slots?.tracknum || ordinalToNum[slots.tracknumword];
+  const num = slots?.tracknum || (ordinalToNum[slots.tracknumword] + 1);
 
   const currentTracks = await tracklist.getTracks();
   const i = await tracklist.index();
@@ -305,11 +310,14 @@ export async function doJumpToTrack(msg: MessageJumpToTrack) {
   const file = locationUriToPath(currentTracks[i].uri);
   const current = await ffprobeTags(file, ["album", "track"]);
 
-  const diff = num - parseInt(current?.track);
-  await playback.pause();
-  if (diff > 0) for (let i = 0; i < diff; i++) await playback.next();
-  if (diff < 0) for (let i = 0; i > diff; i--) await playback.previous();
-  await playback.play();
+  const trackNum = parseInt(current?.track)
+  const diff = num - trackNum;
+  if (trackNum && diff) {
+    await playback.pause();
+    if (diff > 0) for (let i = 0; i < diff; i++) await playback.next();
+    if (diff < 0) for (let i = 0; i > diff; i--) await playback.previous();
+    await playback.play();
+  }
 }
 
 export async function doIntent(raw: MessageBase) {

@@ -193,6 +193,8 @@ export type EntityFilter = Required<Record<EntityFilterType, string[]>>
 
 export type LedPixel = [number, number, number];
 
+export type PlayerType = "mopidy" | "applemusic";
+
 export type PlayStateCache = {
   index: number;
   playbackPosition: number;
@@ -301,6 +303,8 @@ export interface MessagePlayAlbum extends MessageBase {
   slots: {
     album: string;
     playaction: "play" | "queue",
+    tracknumword?: string;
+    tracknum?: number;
   }
 }
 

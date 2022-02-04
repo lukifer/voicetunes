@@ -1,10 +1,14 @@
 import HID from "node-hid";
+import { RingBuffer } from 'ring-buffer-ts';
 import { doIntent, textToIntent } from "./intent";
+import { now } from "./utils";
 
 import config from "./config";
 const {
   BT_BUTTON_NAME,
   BT_DEVICE_EVENT,
+  BT_BYTE_IS_DOWN,
+  BT_BYTE_KEY_CODE,
   CLICK_DELAY_MS,
   CLICK_DOUBLE,
   CLICK_TRIPLE,
@@ -33,6 +37,13 @@ type BtButtonListeners = Partial<Record<BtButton, () => void>>;
 let isListening      = false;
 let buttonTimers     = {};
 let buttonPressCount = {};
+
+let buttonTimestamps = Object.keys(buttons).reduce((acc, button) => ({
+  ...acc,
+  [button]: new RingBuffer<number>(3),
+}), {} as Record<BtButton, RingBuffer<number>>)
+
+const lastPressWithin = (b: BtButton, ms: number) => buttonTimestamps[b].getLast() - now() < ms;
 
 const clearButtonTimer = (k: BtButton) => {
   //console.log("clearButtonTimer", k, !!buttonTimers[k]);
@@ -71,10 +82,8 @@ export async function connect() {
 export async function listen(buttonCallbacks: BtButtonListeners) {
   if(!btRemote) await connect();
   btRemote.on("data", async function(data: Buffer) {
-    // FIXME: there's likely a performanter way to do this
-    const press   = data.map(x => x);
-    const isDown  = press[28];
-    const keyCode = press[12];
+    const isDown  = data[BT_BYTE_IS_DOWN];
+    const keyCode = data[BT_BYTE_KEY_CODE];
     const keyName = mapButtonCodesToNames[keyCode];
 
     if(!buttonCallbacks[keyName]) return;
@@ -84,6 +93,10 @@ export async function listen(buttonCallbacks: BtButtonListeners) {
     const doubleClickCmd = CLICK_DOUBLE[keyName];
     const tripleClickCmd = CLICK_TRIPLE[keyName];
     const hasMultiClickCmd = !!doubleClickCmd || !!tripleClickCmd;
+
+    // Reject duplicate presses if multi-click is not being used
+    if(!hasMultiClickCmd && lastPressWithin(keyName, CLICK_DELAY_MS)) return;
+    buttonTimestamps[keyName].add(now());
 
     if(isDown) {
       //console.log(keyCode, KEY_LISTEN, keyCode === KEY_LISTEN);
@@ -100,9 +113,9 @@ export async function listen(buttonCallbacks: BtButtonListeners) {
       clearButtonTimer(keyName);
       buttonPressCount[keyName] = 0;
       if (!WALKIE_TALKIE && keyCode === KEY_LISTEN) {
+        isListening = !isListening;
         if (isListening) buttonCallbacks.LISTEN_START();
         else             buttonCallbacks.LISTEN_DONE();
-        isListening = !isListening;
       } else {
         buttonCallbacks[keyName]();
       }

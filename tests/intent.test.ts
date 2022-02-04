@@ -10,6 +10,7 @@ import SFX from "../sfx";
 
 import {
   allegaeonConcertoEp,
+  bannedOnVulcan,
   danseFiles,
 } from "./mockData";
 
@@ -18,6 +19,7 @@ import {
   acesHighByIronMaiden,
   acesHighBySteveAndSeagulls,
   albumBannedOnVulcan,
+  albumBannedOnVulcanTrack2,
   bestOfAllegaeon,
   bestOfSixtyFive,
   bestProgRockAughtThree,
@@ -82,6 +84,7 @@ beforeEach(async () => {
   global.Math.random = () => 0.38;
   const {mockMopidy} = (global as any);
   mockMopidy.playback.play.mockClear();
+  mockMopidy.playback.next.mockClear();
   mockMopidy.tracklist.add.mockClear();
   mockMopidy.tracklist.clear.mockClear();
 });
@@ -158,12 +161,7 @@ test("handles a 'play random album by artist' intent", async () => {
 test("parses a 'play album' intent", async () => {
   const {mockMopidy} = (global as any);
   await doIntent(albumBannedOnVulcan);
-  const testFiles = [
-    `01%20Worf's%20Revenge%20(Klingon%20Rap).mp3`,
-    `02%20The%20U.S.S.%20Make-Shit-Up.mp3`,
-    `03%20The%20Sexy%20Data%20Tango.mp3`,
-    `04%20Screw%20the%20Okampa!%20(I%20Wanna%20Go%20Home).mp3`,
-  ].map(mp3 => `${basePathUri}Voltaire/Banned%20on%20Vulcan/${mp3}`);
+  const testFiles = bannedOnVulcan.map(mp3 => `${basePathUri}${mp3}`)
   const [first, ...remainder] = testFiles;
   expectTracksAdded([first]);
   expectTracksAdded(remainder);
@@ -175,6 +173,26 @@ test("parses a 'play album' intent", async () => {
   await doIntent(jumpToTrackThree);
   expect(mockMopidy.playback.pause).toHaveBeenCalled();
   expect(mockMopidy.playback.next).toHaveBeenCalledTimes(2);
+  expect(mockMopidy.playback.play).toHaveBeenCalled();
+
+  mockMopidy.tracklist.getTracks = jest.fn(() => []);
+});
+
+test("parses a 'play album starting at track number' intent", async () => {
+  const {mockMopidy} = (global as any);
+
+  const testFiles = bannedOnVulcan.map(mp3 => `${basePathUri}${mp3}`)
+  mockMopidy.tracklist.getTracks = jest.fn().mockImplementation(() =>
+    testFiles.map(uri => ({uri: locationUriToPath(uri).replace(basePath, itunesPath)}))
+  );
+
+  await doIntent(albumBannedOnVulcanTrack2);
+
+  const [first, ...remainder] = testFiles;
+  expectTracksAdded([first]);
+  expectTracksAdded(remainder);
+
+  expect(mockMopidy.playback.next).toHaveBeenCalledTimes(1);
   expect(mockMopidy.playback.play).toHaveBeenCalled();
 
   mockMopidy.tracklist.getTracks = jest.fn(() => []);

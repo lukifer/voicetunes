@@ -1120,7 +1120,7 @@ export const albumBannedOnVulcanTrack2 = {
       ]
     },
     {
-      "entity": "trackord",
+      "entity": "tracknumword",
       "value": "second",
       "raw_value": "second",
       "source": "",
@@ -1171,7 +1171,8 @@ export const albumBannedOnVulcanTrack2 = {
   "wav_name": null,
   "slots": {
     "playaction": "play",
-    "album": "banned on vulcan"
+    "album": "banned on vulcan",
+    "tracknumword": "second"
   }
 } as MessageBase;
 
