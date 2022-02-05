@@ -45,7 +45,7 @@ let buttonTimestamps = Object.keys(buttons).reduce((acc, button) => ({
   [button]: new RingBuffer<number>(3),
 }), {} as Record<BtButton, RingBuffer<number>>)
 
-const lastPressWithin = (b: BtButton, ms: number) => buttonTimestamps[b].getLast() - now() < ms;
+const lastPressWithin = (b: BtButton, ms: number) => now() - buttonTimestamps[b].getLast() < ms;
 
 const clearButtonTimer = (k: BtButton) => {
   //console.log("clearButtonTimer", k, !!buttonTimers[k]);
@@ -64,10 +64,12 @@ const mapButtonCodesToNames = Object.keys(buttons).reduce((acc, k: BtButton) => 
 
 export async function btConnect() {
   return new Promise((resolve, _reject) => {
+    try {
+    // console.log({driveType: HID.setDriverType()})
     const doConnect = () => {
       const hidDevices = HID.devices();
       //console.log({BT_BUTTON_NAME})
-      //console.log(hidDevices)
+      //console.log({hidDevices})
       //console.log(hidDevices.map(x => x.product).join(','))
       if(hidDevices.find(x => x.product === BT_BUTTON_NAME && (!BT_USAGE_PAGE || x.usagePage === BT_USAGE_PAGE))) {
         resolve(new HID.HID(BT_DEVICE_EVENT || "/dev/input/event0"));
@@ -76,17 +78,22 @@ export async function btConnect() {
       }
     };
     doConnect();
+    } catch(err) { console.log('btConnect_err', err); }
   });
 }
 
 let btRemote: NodeJS.EventEmitter;
 export async function connect() {
+  try {
   btRemote = await btConnect() as NodeJS.EventEmitter;
+  } catch(err) { console.log('connect_err', err) }
 }
 
 export async function listen(buttonCallbacks: BtButtonListeners) {
   if(!btRemote) await connect();
+  btRemote.on("error", async (error) => console.log("on_error", error))
   btRemote.on("data", async function(data: Buffer) {
+    try {
     const isDown  = data[BT_BYTE_IS_DOWN];
     const keyCode = data[BT_BYTE_KEY_CODE];
     const keyName = mapButtonCodesToNames[keyCode];
@@ -103,8 +110,11 @@ export async function listen(buttonCallbacks: BtButtonListeners) {
     const hasMultiClickCmd = !!doubleClickCmd || !!tripleClickCmd;
 
     // Reject duplicate presses if multi-click is not being used
-    if(!hasMultiClickCmd && lastPressWithin(keyName, CLICK_DELAY_MS)) return;
-    buttonTimestamps[keyName].add(now());
+    if(!isDown) {
+      if(!hasMultiClickCmd && lastPressWithin(keyName, CLICK_DELAY_MS))
+        return;
+      buttonTimestamps[keyName].add(now());
+    }
 
     if(isDown) {
       //console.log(keyCode, KEY_LISTEN, keyCode === KEY_LISTEN);
@@ -162,5 +172,6 @@ export async function listen(buttonCallbacks: BtButtonListeners) {
     } else {
       singleClick();
     }
+    } catch(err) { console.log("bt_listen_err", err); }
   });
 }

@@ -81,14 +81,14 @@ export class MopidyPlayer extends Player {
   async setVolume(vol: number) {
     return mopidy.mixer.setVolume([vol]);
   }
-  async playState() {
+  async playerState() {
     return mopidy.playback.getState();
   }
   async play() {
     return mopidy.playback.play();
   }
   async pause() {
-    return mopidy.playback.pause();
+    return await mopidy.playback.pause();
   }
   async resume() {
     return mopidy.playback.resume();
