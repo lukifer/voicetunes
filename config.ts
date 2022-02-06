@@ -64,7 +64,8 @@ const configDefaults = {
   PATH_DATABASE: "./itunes.sqlite3",
   PATH_MUSIC: "/home/pi/music",
   PATH_RAMDISK: "/tmp/ramdisk",
-  PLAYER: "mopidy" as "mopidy" | "applemusic",
+  PLAYER: "mopidy" as "mopidy" | "applemusic" | "itunes",
+  PLAYLIST_NAME: "voicetunes",
   PREV_TRACK_MS: 15000,
   REC_BIN: "sudo arecord -q -t raw --duration=20 --rate=16000 --format=S16_LE", // `sudo parec --raw --format=s16le --channels=1 --rate=16000`
   RECSTOP_BIN: "sudo killall -q arecord",

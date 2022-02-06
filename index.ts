@@ -23,13 +23,14 @@ const {
   DENOISE_SOX,
   MIN_LISTEN_DURATION_MS,
   PATH_RAMDISK,
+  PLAYER,
   REC_BIN,
   VOICE2JSON_BIN,
 } = config;
 
 const execp = promisify(exec);
 
-export const player = getPlayer("mopidy");
+export const player = getPlayer(PLAYER);
 
 player.start().then(async () => {
   SFX.init(AUDIO_DEVICE_OUT);

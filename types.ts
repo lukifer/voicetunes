@@ -18,6 +18,7 @@ export type SqlTrack = {
   location: string;
   name: string;
   normalization: number;
+  persistent_id: string;
   rating: number;
   track_count: number;
   track_id: number;
@@ -193,7 +194,7 @@ export type EntityFilter = Required<Record<EntityFilterType, string[]>>
 
 export type LedPixel = [number, number, number];
 
-export type PlayerType = "mopidy" | "applemusic";
+export type PlayerType = "mopidy" | "applemusic" | "itunes";
 
 export type PlayStateCache = {
   index: number;

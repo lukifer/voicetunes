@@ -53,7 +53,7 @@ const {
   MQTT_PASSTHROUGH_INTENTS,
   MIN_RATING,
   MIN_RATING_BEST,
-  PATH_MUSIC,
+  PLAYER,
   PREV_TRACK_MS,
   USE_LED,
   VOICE2JSON_BIN,
@@ -70,7 +70,11 @@ const ordinalToNum: NumberMap =
     [x[1]]: parseInt(x[0]) - 1,
   }), {} as NumberMap);
 
-const trackLocations = (files: SqlTrack[]) => files.map(x => x.location.split("/iTunes%20Media/Music/")[1] || "")
+const trackLocations = (files: SqlTrack[]) => files.map(f =>
+  PLAYER === "mopidy"
+  ? f.location.split("/iTunes%20Media/Music/")[1] || ""
+  : f.persistent_id
+)
 
 export const whereYear = (year: number, range?: number) =>
   range
@@ -123,7 +127,7 @@ async function doPlayArtist(msg: MessagePlayArtist, best: boolean = false) {
   if(!slots?.artist) return err("no artist", msg);
   const minRating = best ? MIN_RATING_BEST : MIN_RATING;
   const artistTracks = await dbQuery(sql`
-    SELECT t.location
+    SELECT t.location, t.persistent_id
     FROM vox_artists va
     INNER JOIN tracks t ON va.artist = t.artist
     WHERE va.sentence = ${slots.artist} AND t.rating >= ${minRating}
@@ -163,7 +167,7 @@ async function doPlayArtistAlbumByNumber(msg: MessagePlayArtistAlbumByNumber) {
   const albumIndex = ordinalToNum[slots.albumnum] || 0;
   const direction = dbRawValue(slots.albumnum === "latest" ? "DESC" : "ASC");
   const albumNumTracks = await dbQuery(sql`
-    SELECT tracks.location
+    SELECT tracks.location, tracks.persistent_id
     FROM tracks
     INNER JOIN (
       SELECT t.album, IFNULL(t.album_artist, t.artist) as album_artist
@@ -190,7 +194,7 @@ export async function doPlayAlbum(msg: MessagePlayAlbum) {
   const { slots } = msg;
   const queue = slots.playaction === "queue";
   const albumTracks = await dbQuery(sql`
-    SELECT t.location, t.artist
+    SELECT t.location, t.artist, t.persistent_id
     FROM vox_albums va
     INNER JOIN tracks t ON va.album = t.album AND (va.artist IS NULL OR va.artist = IFNULL(t.album_artist, t.artist))
     WHERE va.sentence = ${slots.album}
@@ -216,7 +220,7 @@ export async function doPlayGenre(msg: MessagePlayGenre, best: boolean = false) 
   const queue = slots.playaction === "queue";
   const minRating = best ? MIN_RATING_BEST : MIN_RATING;
   const genreTracks = await dbQuery(sql`
-    SELECT t.location
+    SELECT t.location, t.persistent_id
     FROM vox_genres vg
     INNER JOIN tracks t ON vg.genre = t.genre
     WHERE vg.sentence = ${genre}
@@ -241,7 +245,7 @@ export async function doStartPlaylist(msg: MessageStartPlaylist) {
     ? dbRawValue("ORDER BY RANDOM()")
     : sql`ORDER BY ${sql.ident("pi", "pos")}`;
   const playlistTracks = await dbQuery(sql`
-    SELECT t.location
+    SELECT t.location, t.persistent_id
     FROM vox_playlists vp
     INNER JOIN playlist_items pi ON vp.playlist_id = pi.playlist_id
     INNER JOIN tracks t ON pi.track_id = t.track_id
@@ -262,7 +266,7 @@ export async function doPlayTrack(msg: MessagePlayTrack) {
   if(!slots?.track) return err("no track", msg);
   const queue = slots.playaction === "queue";
   const tracks = await dbQuery(sql`
-    SELECT t.location
+    SELECT t.location, t.persistent_id
     FROM vox_tracks vt
     INNER JOIN tracks t ON vt.track_id = t.track_id
     WHERE vt.sentence = ${slots.track}
@@ -282,7 +286,7 @@ export async function doPlayYear(msg: MessagePlayYear, best = false) {
   const queue = slots.playaction === "queue";
   const minRating = best ? MIN_RATING_BEST : MIN_RATING;
   const yearTracks = await dbQuery(sql`
-    SELECT t.location
+    SELECT t.location, t.persistent_id
     FROM tracks t
     WHERE t.rating >= ${minRating}
     ${year   ? whereYear(years[year])        : sql``}
@@ -346,7 +350,7 @@ export async function doIntent(raw: MessageBase) {
     case "NextTrack":     return await nextTrack();
     case "PreviousTrack": return await previousTrack();
 
-    case "Resume": return await player.resume();
+    case "Resume": return await player.play();
     case "Stop":   return await player.pause();
 
     case "Nevermind": return await SFX.ok();
@@ -442,7 +446,7 @@ let loadingTimer: ReturnType<typeof setTimeout> | null = null;
 
 async function queueRemainingTracks(tracks: string[]) {
   const batch = 5;
-  await player.addTracks(tracks.slice(0, batch).map(file => `file://${PATH_MUSIC}/${file}`));
+  await player.addTracks(tracks.slice(0, batch));
   if(tracks.length > batch) {
     await wait(250);
     await queueRemainingTracks(tracks.slice(batch));
@@ -465,7 +469,7 @@ export async function playTracks(tracks: string[], opts: PlayOptions = {}) {
   // queue starting track (random or specific) and start playing immediately
   const playIdx = shuffle ? rnd(tracks.length) : jumpTo;
   if(!queue) await player.clearTracks();
-  await player.addTracks([ `file://${PATH_MUSIC}/${tracks[playIdx]}` ]);
+  await player.addTracks([ tracks[playIdx] ]);
   if(seekMs) await player.seek(seekMs);
   if(!queue) {
     await player.play();
@@ -531,19 +535,13 @@ export async function nextTrack() {
 
 // let cachedVolume: number | null = null;
 export async function togglePlayback() {
-  if("playing" === await player.playerState()) {
+  if(DEFAULT_ACTION && await player.tracklistLength() === 0) {
+    const intent = await textToIntent(DEFAULT_ACTION);
+    if(intent) doIntent(intent);
+  } else {
     //cachedVolume = await player.getVolume();
     //await transitionVolume(cachedVolume, 0);
-    return player.pause();
-  } else {
-    if(await player.tracklistLength() === 0) {
-      if(DEFAULT_ACTION) {
-        const intent = await textToIntent(DEFAULT_ACTION);
-        if(intent) doIntent(intent)
-      }
-    } else {
-      await player.resume();
-    }
+    await player.togglePlayback();
     //if(cachedVolume !== null) {
     //  await transitionVolume(await player.getVolume(), cachedVolume);
     //  cachedVolume = null;
