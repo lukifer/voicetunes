@@ -35,7 +35,7 @@ declare module "mopidy" {
 
   class Mopidy {
     constructor(args: constructorArgs);
-    on: (eventType: string, callback: () => Promise<void>) => void;
+    on: (eventType: string, callback: (msg?: any) => Promise<any>) => void;
     mixer: {
       getVolume: ()                 => Promise<number>,
       setVolume: (volume: number[]) => Promise<void>,

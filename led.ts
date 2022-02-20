@@ -81,8 +81,12 @@ export function flash(color: LedPixel, count: number, speed: number = 60) {
   fn();
 }
 
-export function flashErr() {
-  flash([255, 0, 0], 3);
+export function flashErr(cnt: number = 3) {
+  flash([255, 0, 0], cnt);
+}
+
+export function flashOk(cnt: number = 3) {
+  flash([0, 255, 0], 3);
 }
 
 export function volumeChange(oldVol: number, newVol: number) {

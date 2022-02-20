@@ -1,7 +1,7 @@
 import { exec }      from "child_process";
 import { promisify } from "util";
 
-import * as BT       from "./bt";
+import * as KB       from "./kb";
 import * as LED      from "./led";
 import { getPlayer } from "./player";
 import SFX           from "./sfx";
@@ -19,27 +19,78 @@ import {
 const {
   AUDIO_DEVICE_IN,
   AUDIO_DEVICE_OUT,
+  BT_BUTTON_NAME,
   DENOISE_BIN,
   DENOISE_SOX,
+  KEY_DOWN,
+  KEY_LEFT,
+  KEY_LISTEN,
+  KEY_PLAY,
+  KEY_RIGHT,
+  KEY_UP,
   MIN_LISTEN_DURATION_MS,
   PATH_RAMDISK,
   REC_BIN,
   VOICE2JSON_BIN,
+  WALKIE_TALKIE,
 } = config;
 
 const execp = promisify(exec);
 
 export const player = getPlayer("mopidy");
 
+async function buttonListen() {
+  const button = await KB.start(BT_BUTTON_NAME);
+
+  button.on("disconnect", async () => {
+    console.log("button disconnected")
+    await buttonListen();
+  });
+
+  let isListening = false;
+  button.on("keypress", async (m: any) => {
+    if (!m || typeof m !== "object") return; // Remove after adding types
+    const {code} = m;
+    console.log(`key code: ${code || "unknown"}`);
+    switch (code) {
+      case KEY_UP:   return changeVol( 10);
+      case KEY_DOWN: return changeVol(-10);
+
+      case KEY_LEFT:  return await previousTrack();
+      case KEY_RIGHT: return await nextTrack();
+      case KEY_PLAY:  return await togglePlayback();
+
+      case KEY_LISTEN:
+        if (WALKIE_TALKIE) {
+          await startListening();
+        } else {
+          isListening = !isListening;
+          if (isListening) await startListening();
+          else             await stopListening();
+        }
+        break;
+    }
+  });
+  if (WALKIE_TALKIE) button.on("keyup", async (m: any) => {
+    const {code} = m;
+    console.log("keyup", code)
+    if (code === KEY_LISTEN) await stopListening();
+  });
+}
+
 player.start().then(async () => {
   SFX.init(AUDIO_DEVICE_OUT);
   LED.open();
 
-  await BT.connect();
+  await buttonListen();
+  // await BT.connect();
+
   LED.flair();
+  await player.pause();
   await player.clearTracks();
   SFX.beep();
 
+/*
   BT.listen({
     UP:    () => changeVol( 10),
     DOWN:  () => changeVol(-10),
@@ -51,6 +102,7 @@ player.start().then(async () => {
     LISTEN_START: async () => startListening(),
     LISTEN_DONE:  async () => stopListening(),
   });
+*/
 });
 
 async function denoise() {
