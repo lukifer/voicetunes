@@ -2,7 +2,6 @@ import removeAccents from "remove-accents";
 import writtenNumber from "written-number";
 import {readJson} from "./utils";
 import {
-  StringTuple,
   StringReplaceTuple,
   ArtistSentence,
   AlbumSentence,
@@ -62,11 +61,12 @@ const romanNumeralsRegex: StringReplaceTuple[] =
 
 export function scrub(str: string) {
   return removeAccents(str.toLowerCase())
-    .replace(         /\./g, " ")
+    .replace(      /\[.+$/, "")
+    .replace(     /[.\-_]/g, " ")
     .replace(      /[&\+]/g, " and ")
-    .replace(        /\s+/g, " ")
     .replace(/[^a-z0-9\s]/g, "")
     .replace(      /\sn\s/g, " and ")
+    .replace(        /\s+/g, " ")
     .replaceAll(wordSubstitutions)
     ;
 }
@@ -98,11 +98,13 @@ export function scrubArtistName(artistName: string): ArtistSentence {
 }
 
 export function scrubAlbumName(albumName: string): AlbumSentence {
-  const albumLower = (substitutions.albums[albumName] || albumName).toLowerCase();
+  const albumLower = (substitutions.albums[albumName] || albumName)
+    .toLowerCase()
+    .replace(/\[.+$/, "")
+    ;
   return scrub(albumLower)
     .replaceAll(ordinalWords)
     .replaceAll(romanNumeralsRegex)
-    .replace(/\[.+$/, "")
     .replace(/original broadway cast (album|recording)$/, "")
     .replace(/ ost$/, "")
     .replace(/original (motion picture )?(game )?soundtrack/, "soundtrack")

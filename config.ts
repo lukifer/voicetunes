@@ -69,6 +69,7 @@ const configDefaults = {
   PREV_TRACK_MS: 15000,
   REC_BIN: "sudo arecord -q -t raw --duration=20 --rate=16000 --format=S16_LE", // `sudo parec --raw --format=s16le --channels=1 --rate=16000`
   RECSTOP_BIN: "sudo killall -q arecord",
+  SENTENCE_BLOCKLIST: [] as string[],
   STARTING_YEAR: 1900,
   SUBSTITUTIONS: {
     albums: {},

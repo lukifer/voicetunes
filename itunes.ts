@@ -35,6 +35,7 @@ const {
   FLAC_HACK,
   MIN_RATING,
   FILE_EXTENSIONS,
+  SENTENCE_BLOCKLIST,
 } = config;
 
 const knex = knexConnect();
@@ -174,10 +175,12 @@ async function doArtists() {
   const filteredArtists = artistNames.filter(filterArtists);
 
   for (const artist of filteredArtists) {
-    await dbRaw(knex('vox_artists').insert({
-      sentence: scrubArtistName(artist),
-      artist,
-    }).toString());
+    const artistSentence = scrubArtistName(artist)
+    if (!SENTENCE_BLOCKLIST.includes(artistSentence))
+      await dbRaw(knex('vox_artists').insert({
+        sentence: artistSentence,
+        artist,
+      }).toString());
   }
 }
 
@@ -199,7 +202,8 @@ async function doGenres() {
       sentence: genreSentence,
       genre,
     };
-    await dbRaw(knex('vox_genres').insert(newRow).toString());
+    if (!SENTENCE_BLOCKLIST.includes(genreSentence))
+      await dbRaw(knex('vox_genres').insert(newRow).toString());
   }
 }
 
@@ -220,7 +224,8 @@ async function doPlaylists() {
       sentence: playlistSentence,
       playlist_id,
     };
-    await dbRaw(knex('vox_playlists').insert(newRow).toString());
+    if (!SENTENCE_BLOCKLIST.includes(playlistSentence))
+      await dbRaw(knex('vox_playlists').insert(newRow).toString());
   }
 }
 
@@ -247,7 +252,7 @@ async function doTracks() {
       { sentence: trackByArtistSentence },
     ];
     for (const newRow of newRows) {
-      if (newRow.sentence)
+      if (newRow.sentence && !SENTENCE_BLOCKLIST.includes(newRow.sentence))
         await dbRaw(knex('vox_tracks').insert({
           ...newRow,
           track_id,

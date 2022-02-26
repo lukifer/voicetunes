@@ -12,7 +12,6 @@ var apple = requireDir('./applelib');
 import config from "./config";
 const {
   PATH_MUSIC,
-  PLAYER,
   PLAYLIST_NAME,
   URL_MOPIDY,
 } = config;
@@ -41,37 +40,33 @@ type MopidyTrack = {
   comment?: string;
 };
 
-export class Player {
-  mopidy: Mopidy | null;
+interface Player {
   type: PlayerType;
-  constructor(type: PlayerType) {
-    this.type = type
-  }
-  start() { return new Promise<void>(resolve => resolve())}
-  async getVolume() { return 0; }
-  async setVolume(_vol: number) {}
-  async playerState() { return ""; }
-  async play() {}
-  async pause() {}
-  async togglePlayback() {}
-  async previous() {}
-  async next() {}
-  async seek(_pos: number) {}
-  async clearTracks() {}
-  async currentTrackIndex() { return 0; }
-  async getTimePosition() { return 0; }
-  async addTracks(_uris: string[], _at_position?: number) {}
-  async tracklistLength() { return 0; }
-  async getTracks(): Promise<MopidyTrack[]> { return [] }
+  start: () => Promise<void>;
+  getVolume: () => Promise<number>;
+  setVolume: (vol: number) => Promise<void>;
+  play: () => Promise<void>;
+  pause: () => Promise<void>;
+  togglePlayback: () => Promise<void>;
+  previous: () => Promise<void>;
+  next: () => Promise<void>;
+  seek: (vol: number) => Promise<void>;
+  clearTracks: () => Promise<void>;
+  currentTrackIndex: () => Promise<number>;
+  getTimePosition: () => Promise<number>;
+  addTracks: (uris: string[], at_position?: number) => Promise<void>;
+  tracklistLength: () => Promise<number>;
+  getTracks: () => Promise<MopidyTrack[]>;
 }
 
 type AppleMusicJxa = {
   method: () => {};
 }
 
-export class AppleMusicPlayer extends Player {
-  constructor() {
-    super(PLAYER);
+export class AppleMusicPlayer implements Player {
+  type = "applemusic" as PlayerType;
+  constructor(type: PlayerType) {
+    this.type = type;
   }
   jxa<T = void>({method}: AppleMusicJxa, replace: Record<string, string> = {}) {
     return new Promise<T>((resolve, reject) => {
@@ -98,6 +93,7 @@ export class AppleMusicPlayer extends Player {
       })
     })
   }
+  async start() {}
   async getVolume() {
     return await this.jxa<number>(apple.soundVolume);
   }
@@ -157,9 +153,9 @@ export class AppleMusicPlayer extends Player {
 
 let mopidy: Mopidy | null = null;
 
-export class MopidyPlayer extends Player {
+export class MopidyPlayer implements Player {
+  type = "mopidy" as PlayerType;
   constructor() {
-    super("mopidy")
     if (!mopidy) mopidy = new Mopidy({ webSocketUrl: URL_MOPIDY });
   }
   start() {
@@ -225,5 +221,5 @@ export function getPlayer(type: PlayerType) {
   if (type === "mopidy")
     return new MopidyPlayer();
   else if (["applemusic", "itunes"].includes(type))
-    return new AppleMusicPlayer();
+    return new AppleMusicPlayer(type);
 }
