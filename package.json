@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon --watch '*.ts' --exec 'npx ts-node' index.ts >> log.txt",
+    "start": "nodemon --watch '*.ts' --exitcrash --exec 'npx ts-node' index.ts >> log.txt",
     "mqtt": "nodemon --watch '*.ts' --exec 'npx ts-node' mqttlisten.ts >> log.txt",
     "test": "jest --verbose",
     "train": "nodemon --exec 'ts-node' train.ts",
@@ -23,6 +23,7 @@
     "@types/sqlite3": "^3.1.7",
     "apa102-spi": "0.0.6",
     "argparse": "^2.0.1",
+    "input-event": "^1.2.6",
     "jest": "^27.3.1",
     "js-function-string": "^1.0.0",
     "knex": "^0.95.11",

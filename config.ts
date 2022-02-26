@@ -9,8 +9,9 @@ const configDefaults = {
   BT_BYTE_IS_DOWN: 28,
   BT_BYTE_KEY_CODE: 12,
   BT_USAGE_PAGE: null as null | number,
-  BT_DEVICE_EVENT: "/dev/input/event0",
   CLICK_DELAY_MS: 500,
+  
+  // Currently unused
   CLICK_DOUBLE: {
     KEY_UP: "",
     KEY_DOWN: "",
@@ -27,6 +28,7 @@ const configDefaults = {
     KEY_PLAY: "",
     KEY_LISTEN: "",
   },
+
   DEFAULT_ACTION: "",
   DENOISE_BIN: "",
   DENOISE_SOX: false as boolean | number,
@@ -47,12 +49,12 @@ const configDefaults = {
     tracks: [],
   },
   FLAC_HACK: false,
-  KEY_UP: 233,
-  KEY_DOWN: 234,
-  KEY_LEFT: 182,
-  KEY_RIGHT: 181,
-  KEY_PLAY: 205,
-  KEY_LISTEN: 35,
+  KEY_UP: 115,
+  KEY_DOWN: 114,
+  KEY_LEFT: 165,
+  KEY_RIGHT: 163,
+  KEY_PLAY: 164,
+  KEY_LISTEN: 172,
   LED_MS: 80,
   MAX_QUEUED_TRACKS: 100,
   MIN_LISTEN_DURATION_MS: 1000,
