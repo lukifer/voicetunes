@@ -30,7 +30,7 @@
     "mqtt": "^4.2.8",
     "node-hid": "^2.1.1",
     "onoff": "^6.0.3",
-    "plist": "^3.0.4",
+    "plist": "^3.0.5",
     "remove-accents": "^0.4.2",
     "rpi-gpio": "^2.1.7",
     "shuffle-array": "^1.0.1",
