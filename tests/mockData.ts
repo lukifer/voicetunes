@@ -31,7 +31,7 @@ export const danseFiles = [
   `Kent/Unknown%20Album/Vy%20Ett%20Luftslott.mp3`,
   `Roxette/Unknown%20Album/The%20Look.mp3`,
   `Scissor%20Sisters/Night%20Work/01%20Night%20Work.mp3`,
-  `Ray%20Charles/Unknown%20Album/Shake%20Your%20Tailfeathers.mp3`,
+  `The%20Blues%20Brothers/The%20Definitive%20Collection/18%20Shake%20Your%20Tailfeather%20[feat.%20Ray%20Charles].mp3`,
   `Party%20Ben/Unknown%20Album/Callin'%20Up%20the%20Pieces%20%5BLyrics%20Born%20vs.%20Average%20White%20Band%5D.mp3`,
   `Morris%20Day%20and%20The%20Time/Unknown%20Album/Jungle%20Love.mp3`,
   `Monae/Unknown%20Album/Tightrope%20%5Bfeat.%20Leftfoot%5D.mp3`,

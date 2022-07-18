@@ -1388,3 +1388,34 @@ export const whatIsPlaying = {
   "wav_name": null,
   "slots": {},
 } as MessageBase;
+
+export const artistPowerGlove = {
+  "text": "play something by power glove",
+  "intent": {
+    "name": "PlayArtist",
+    "confidence": 1
+  },
+  "entities": [],
+  "raw_text": "play something by power glove",
+  "tokens": [
+    "play",
+    "something",
+    "by",
+    "power",
+    "glove"
+  ],
+  "raw_tokens": [
+    "play",
+    "something",
+    "by",
+    "power",
+    "glove"
+  ],
+  "wav_seconds": null,
+  "transcribe_seconds": null,
+  "speech_confidence": null,
+  "wav_name": null,
+  "slots": {
+    "artist": "power glove"
+  },
+} as MessageBase;

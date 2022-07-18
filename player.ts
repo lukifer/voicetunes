@@ -4,10 +4,12 @@ import {eval as osascript} from "osascript";
 import requireDir          from "require-dir";
 
 import {
-  PlayerType
+  PlayerType,
+  StringMap,
 } from "./types";
 
-var apple = requireDir('./applelib');
+type AppleMusicJxa = { method: () => void };
+var apple = requireDir('./applelib') as Record<string, AppleMusicJxa>;
 
 import config from "./config";
 const {
@@ -57,18 +59,16 @@ interface Player {
   addTracks: (uris: string[], at_position?: number) => Promise<void>;
   tracklistLength: () => Promise<number>;
   getTracks: () => Promise<MopidyTrack[]>;
-}
-
-type AppleMusicJxa = {
-  method: () => {};
-}
+};
 
 export class AppleMusicPlayer implements Player {
   type = "applemusic" as PlayerType;
   constructor(type: PlayerType) {
     this.type = type;
   }
-  jxa<T = void>({method}: AppleMusicJxa, replace: Record<string, string> = {}) {
+  // jxa<T = void>(foo: AppleMusicJxa, replace: StringMap = {}) {
+  jxa<T = void>(foo: {method: () => void}, replace: StringMap = {}) {
+    const {method} = foo
     return new Promise<T>((resolve, reject) => {
       const methodStr = stringify(method);
       const replacePairs = Object.entries({

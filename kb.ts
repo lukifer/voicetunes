@@ -7,18 +7,6 @@ const execp = promisify(exec);
 
 const NL = `
 `;
- 
-/*
-const input = new InputEvent('/dev/input/event2');
-
-const keyboard = new InputEvent.Keyboard(input);
- 
-keyboard.on('error'   , (m: any) => console.log('error', m));
-keyboard.on('opened'  , (m: any) => console.log('opened', m));
-keyboard.on('keyup'   , (m: any) => console.log('keyup', m));
-keyboard.on('keydown' , (m: any) => console.log('keydown', m));
-keyboard.on('keypress', (m: any) => console.log('keypress', m));
-*/
 
 const parseDevices = (devsStr: string) => devsStr.trim().split(NL+NL).map(dev =>
   dev

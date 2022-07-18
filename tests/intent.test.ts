@@ -20,6 +20,7 @@ import {
   acesHighBySteveAndSeagulls,
   albumBannedOnVulcan,
   albumBannedOnVulcanTrack2,
+  artistPowerGlove,
   bestOfAllegaeon,
   bestOfSixtyFive,
   bestProgRockAughtThree,
@@ -239,7 +240,7 @@ test("handles a 'play track' intent", async () => {
 
 test("handles a 'play genre' intent", async () => {
   await doIntent(genreBlues);
-  expectTracksAdded([`${basePathUri}Ray%20Charles/Unknown%20Album/Shake%20Your%20Tailfeathers.mp3`]);
+  expectTracksAdded([`${basePathUri}The%20Blues%20Brothers/The%20Definitive%20Collection/18%20Shake%20Your%20Tailfeather%20[feat.%20Ray%20Charles].mp3`]);
 });
 
 test("handles a 'play some progressive rock from nineteen seventy six' intent", async () => {
@@ -270,7 +271,7 @@ test("handles a 'what is playing' intent", async () => {
   ]);
 
   await doIntent(whatIsPlaying);
-  expect(SFX.speak).toHaveBeenCalledWith("Shake Your Tailfeathers by Ray Charles");
+  expect(SFX.speak).toHaveBeenCalledWith("shake your tailfeather by the blues brothers");
 
   mockMopidy.tracklist.getTracks = jest.fn(() => []);
 });
@@ -297,4 +298,10 @@ test("previous track returns to start of track after a cutoff", async () => {
   await playback.seek(60 * 1000);
   await doIntent(previousTrack);
   expect(playback.seek).toHaveBeenCalledWith([0]);
+});
+
+test("matches an artist with different spelling but the same pronounciation", async () => {
+  await doIntent(artistPowerGlove);
+  expectTracksAdded([`${basePathUri}Powerglove/Saturday%20Morning%20Apocalypse/06%20Transformers.mp3`]);
+  expectTracksAdded([`${basePathUri}Power%20Glove/EP%20I/01%20Streets%20of%202043.mp3`]);
 });

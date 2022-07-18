@@ -3,7 +3,7 @@ import * as fs                 from "fs";
 import { connect, MqttClient } from "mqtt";
 import { promisify }           from "util";
 
-import { PlayStateCache } from "./types";
+import { PlayStateCache, StringMap } from "./types";
 
 export const execp = promisify(exec);
 
@@ -36,18 +36,22 @@ export function mqtt(ip: string) {
 export const escQuotes = (str: string) => str.replace(/["]/g, '\\"')
 
 export async function ffprobeTags(file: string, tags: string[]) {
-  // ffprobe returns values in the following fixed order:
-  const orderedTags = [
+  const supportedTags = [
     "title",
     "artist",
     "album",
     "track",
   ].filter(t => tags.includes(t))
-  const flags = `-show_entries format_tags=${orderedTags.join(',')} -v 16`;
-  const cmd = `ffprobe ${flags} -of default=noprint_wrappers=1:nokey=1 "${escQuotes(file)}"`;
+  const flags = `-show_entries format_tags=${supportedTags.join(',')} -v 16`;
+  const cmd = `ffprobe ${flags} -of default=noprint_wrappers=1 "${escQuotes(file)}"`;
   const { stdout } = await execp(cmd);
-  const result = stdout.split("\n");
-  return orderedTags.reduce((out, tag, n) => ({ ...out, [tag]: result[n] }), {} as Record<string, string>);
+  const result = stdout.trim().split("\n");
+  return result.reduce((out, str) => {
+    const match = str.match(/^TAG:([a-z]+)=(.+)$/);
+    return match?.length === 3
+      ? {...out, [match[1]]: match[2]}
+      : out
+  }, {} as StringMap)
 }
 
 export const locationUriToPath = (uri: string) => decodeURIComponent(uri.replace(/^file:\/\//, ""));

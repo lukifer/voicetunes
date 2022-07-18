@@ -7,6 +7,10 @@ import * as LED   from "./led";
 import SFX        from "./sfx";
 
 import {
+  scrubArtistName,
+  scrubTrackName,
+} from "./scrub"
+import {
   dbQuery,
   dbRawValue,
 } from "./db";
@@ -383,7 +387,8 @@ export async function doIntent(raw: MessageBase) {
       const i = await player.currentTrackIndex();
       const file = locationUriToPath(currentTracks[i].uri);
       const tags = await ffprobeTags(file, ["artist", "title"]);
-      SFX.speak(`${tags.title} by ${tags.artist}`);
+
+      SFX.speak(`${scrubTrackName(tags.title)} by ${scrubArtistName(tags.artist)}`);
       break;
 
     case "WhatIsTime":
