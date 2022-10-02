@@ -1,4 +1,4 @@
-import { MessageBase } from "../types";
+import { MessageBase } from "../src/types";
 
 export const latestAlbumByNirvana = {
   "text": "play the latest album by nirvana",

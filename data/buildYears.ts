@@ -1,10 +1,10 @@
 import * as fs from "fs";
 import writtenNumber from "written-number";
-import { NumberMap } from "../types";
+import { NumberMap } from "../src/types";
 
 const numberWords = (n: number, noAnd: boolean = true) => writtenNumber(n, {noAnd}).replace(/-/g, " ");
 
-import config from "../config";
+import config from "../src/config";
 const { STARTING_YEAR } = config;
 
 const currentYear = (new Date()).getFullYear();

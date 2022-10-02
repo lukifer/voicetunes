@@ -3,12 +3,14 @@ import { RingBuffer } from 'ring-buffer-ts';
 import { doIntent, textToIntent } from "./intent";
 import { now } from "./utils";
 
+// DEPRECATED
+
 import config from "./config";
 const {
   BT_BUTTON_NAME,
   BT_BYTE_IS_DOWN,
   BT_BYTE_KEY_CODE,
-  BT_DEVICE_EVENT,
+  // BT_DEVICE_EVENT,
   BT_USAGE_PAGE,
   CLICK_DELAY_MS,
   CLICK_DOUBLE,
@@ -72,7 +74,8 @@ export async function btConnect() {
       //console.log({hidDevices})
       //console.log(hidDevices.map(x => x.product).join(','))
       if(hidDevices.find(x => x.product === BT_BUTTON_NAME && (!BT_USAGE_PAGE || x.usagePage === BT_USAGE_PAGE))) {
-        resolve(new HID.HID(BT_DEVICE_EVENT || "/dev/input/event0"));
+        // resolve(new HID.HID(BT_DEVICE_EVENT || "/dev/input/event0"));
+        resolve(new HID.HID("/dev/input/event0"));
       } else {
         setTimeout(() => doConnect(), 3000);
       }

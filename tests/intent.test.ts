@@ -2,11 +2,11 @@ import * as fs from "fs";
 import os      from "os";
 import Mopidy  from "mopidy";
 
-import { dbRaw }                   from "../db";
-import { doIntent, playTracks }    from "../intent";
-import { locationUriToPath, wait } from "../utils";
+import { dbRaw }                   from "../src/db";
+import { doIntent, playTracks }    from "../src/intent";
+import { locationUriToPath, wait } from "../src/utils";
 
-import SFX from "../sfx";
+import SFX from "../src/sfx";
 
 import {
   allegaeonConcertoEp,

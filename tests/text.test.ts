@@ -1,6 +1,7 @@
 import Mopidy from "mopidy";
-import { textToIntent } from "../intent";
-import { MessageBase, MessageIntent }  from "../types";
+
+import { textToIntent }               from "../src/intent";
+import { MessageBase, MessageIntent } from "../src/types";
 
 import {
   acesHigh,

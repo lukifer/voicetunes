@@ -4,7 +4,7 @@ import {
   escQuotes,
   ffprobeTags,
   removeNth,
-} from "../utils";
+} from "../src/utils";
 
 test("removeNth() returns array without a specific entry", () => {
   const arr = ["a", "b", "c", "d", "e"];

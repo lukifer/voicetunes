@@ -5,9 +5,9 @@ if [[ $# -eq 0 ]] ; then
 fi
 
 npm i
-ts-node itunes-to-sql.ts --overwrite
-ts-node itunes.ts
-ts-node sentences.ini.ts
+ts-node src/itunes-to-sql.ts --overwrite
+ts-node src/itunes.ts
+ts-node src/sentences.ini.ts
 
 touch data/sounds_like.txt
 

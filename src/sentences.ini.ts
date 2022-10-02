@@ -2,7 +2,7 @@ import * as fs       from "fs";
 import {sql}         from "@databases/sqlite";
 import writtenNumber from "written-number";
 
-import {dbQuery} from "./db";
+import {dbQuery}  from "./db";
 import {readJson} from "./utils";
 
 import {
