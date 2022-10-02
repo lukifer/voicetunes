@@ -3,7 +3,7 @@
 # Install core dependencies
 wget -q -O - https://apt.mopidy.com/mopidy.gpg | sudo apt-key add -
 sudo wget -q -O /etc/apt/sources.list.d/mopidy.list https://apt.mopidy.com/buster.list
-curl -sL https://deb.nodesource.com/setup_12.x | sudo bash -
+curl -sL https://deb.nodesource.com/setup_14.x | sudo bash -
 sudo apt-get install -y nodejs libusb-1.0-0-dev libudev1 libudev-dev swig libatlas-base-dev portaudio19-dev mopidy flite ffmpeg mosquitto
 sudo npm install -g typescript ts-node nodemon
 npm i

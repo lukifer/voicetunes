@@ -195,7 +195,7 @@ export type EntityFilter = Required<Record<EntityFilterType, string[]>>
 
 export type LedPixel = [number, number, number];
 
-export type PlayerType = "mopidy" | "applemusic" | "itunes";
+export type PlayerType = "mopidy" | "mpd" | "applemusic" | "itunes";
 
 export type PlayStateCache = {
   index: number;
