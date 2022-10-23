@@ -1,5 +1,5 @@
-import Apa102spi from "apa102-spi";
 import { Gpio }  from "onoff";
+import rpio      from "rpio"
 
 import config           from "./config";
 import { between, rnd } from "./utils";
@@ -9,18 +9,50 @@ const { LED_MS, USE_LED } = config;
 const rndColor = (base: number, change: number) => between(100, base - change + rnd(change*2), 255);
 const Array12 = [...Array(12)];
 
+function Apa102spi (stringLength, clockDivider) {
+  clockDivider = typeof clockDivider !== 'undefined' ? clockDivider : 200
+  this.bufferLength = stringLength * 4
+  this.writeBuffer = Buffer.alloc(this.bufferLength, 'E0000000', 'hex')
+  this.bufferLength += 4
+  this.writeBuffer = Buffer.concat([Buffer.alloc(4, '00000000', 'hex'), this.writeBuffer], this.bufferLength)
+  
+  rpio.spiBegin()
+  rpio.spiSetClockDivider(clockDivider)
+}
+
+Apa102spi.prototype.sendLeds = function () {
+  rpio.spiWrite(this.writeBuffer, this.bufferLength)
+}
+
+Apa102spi.prototype.setLedColor = function (n, brightness, r, g, b) {
+  n *= 4
+  n += 4
+  this.writeBuffer[n] = brightness | 0b11100000
+  this.writeBuffer[n + 1] = b
+  this.writeBuffer[n + 2] = g
+  this.writeBuffer[n + 3] = r
+}
+
+Apa102spi.prototype.setBuffer = function (ledBuffer) {
+  this.writeBuffer = Buffer.concat([Buffer.alloc(4, '00000000', 'hex'), ledBuffer], this.bufferLength)
+}
+
 let timer: NodeJS.Timeout = null;
 let pos = 0;
 let curColor: LedPixel = [100+rnd(156), 100+rnd(156), 100+rnd(156)];
 let ledColors: LedPixel[] = [...Array12].fill([0, 0, 0]);
 
-let LedDriver: Apa102spi = null;
+// let LedDriver: Apa102spi = null;
+let LedDriver: any = null;
 
 export function open() {
-  if (!USE_LED) return;
+  if (!USE_LED || LedDriver) return;
+
+  rpio.init({gpiomem: false});
   LedDriver = new Apa102spi(12, 100);
+
   const led = new Gpio(5, 'out');
-  led.writeSync(1);
+  const ledResult = led.writeSync(1);
 }
 
 export const startSpinFast   = () => startSpin(0.5 * LED_MS);
