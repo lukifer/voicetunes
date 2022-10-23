@@ -1,14 +1,18 @@
-import { Player }      from "../player";
-import { PlayerType }  from "../types";
+import { connect, MqttClient } from "mqtt";
+import { Player }              from "../player";
+import { PlayerType }          from "../types";
+
+let mqttClient: MqttClient = null;
+
+export function mqtt(ip: string) {
+  if (!mqttClient) mqttClient = connect(`mqtt://${ip}`);
+  return mqttClient
+}
 
 export class MqttPlayer implements Player {
   type = "mqtt" as PlayerType;
   constructor() {
     (async () => {
-      this.client = await mpdapi.connect({
-        host: 'localhost',
-        port: 6600,
-      })
     })()
   }
   async start() {}

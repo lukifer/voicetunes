@@ -1,6 +1,5 @@
 import { exec }                from "child_process";
 import * as fs                 from "fs";
-import { connect, MqttClient } from "mqtt";
 import { promisify }           from "util";
 
 import { PlayStateCache, StringMap } from "./types";
@@ -25,13 +24,6 @@ export const writeCache = (data: PlayStateCache) => fs.writeFileSync(
   `${__dirname}/cache.local.json`,
   JSON.stringify(data, undefined, 2)
 );
-
-let mqttClient: MqttClient = null;
-
-export function mqtt(ip: string) {
-  if (!mqttClient) mqttClient = connect(`mqtt://${ip}`);
-  return mqttClient
-}
 
 export const escQuotes = (str: string) => str.replace(/["]/g, '\\"')
 

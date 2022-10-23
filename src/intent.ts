@@ -2,9 +2,10 @@ import Shuffler from "shuffle-array";
 import { sql }  from "@databases/sqlite";
 
 import config     from "./config";
-import { player } from "./index";
 import * as LED   from "./led";
+import { mqtt }   from "./players/mqtt";
 import SFX        from "./sfx";
+import { player } from "../index";
 
 import {
   scrubArtistName,
@@ -21,7 +22,6 @@ import {
   execp,
   ffprobeTags,
   locationUriToPath,
-  mqtt,
   readJson,
   removeNth,
   rnd,
