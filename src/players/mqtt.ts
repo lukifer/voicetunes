@@ -19,7 +19,7 @@ export class MqttPlayer implements Player {
   async getVolume() {
     return 0;
   }
-  async setVolume(vol: number) {
+  async setVolume(_vol: number) {
   }
   async playerState() {
     return "paused"
@@ -37,7 +37,7 @@ export class MqttPlayer implements Player {
   }
   async next() {
   }
-  async seek(pos: number) {
+  async seek(_pos: number) {
   }
   async currentTrackIndex() {
     return 0; // TODO fixme
@@ -47,7 +47,7 @@ export class MqttPlayer implements Player {
   }
   async clearTracks() {
   }
-  async addTracks(uris: string[], at_position?: number) {
+  async addTracks(_uris: string[], _at_position?: number) {
   }
   async tracklistLength() {
     return 0 // fixme

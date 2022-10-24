@@ -2,7 +2,6 @@ import { exec }      from "child_process";
 import { promisify } from "util";
 
 import * as LED from "./led";
-import * as SFX from "./sfx";
 import config   from "./config";
 
 import { now, wait } from "./utils";
@@ -10,7 +9,6 @@ import { doIntent }  from "./intent";
 
 const {
   AUDIO_DEVICE_IN,
-  AUDIO_DEVICE_OUT,
   DENOISE_BIN,
   DENOISE_SOX,
   MIN_LISTEN_DURATION_MS,

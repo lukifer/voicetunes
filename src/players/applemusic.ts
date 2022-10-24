@@ -1,6 +1,6 @@
-import stringify           from "js-function-string";
-import {eval as osascript} from "osascript";
-import requireDir          from "require-dir";
+import stringify             from "js-function-string";
+import { eval as osascript } from "osascript";
+import requireDir            from "require-dir";
 
 import {
   PlayerType,

@@ -21,6 +21,7 @@
     "@types/jest": "^29.1.2",
     "@types/knex": "^0.16.1",
     "@types/plist": "^3.0.2",
+    "@types/require-dir": "^1.0.2",
     "@types/rpio": "^2.4.2",
     "@types/shuffle-array": "^1.0.2",
     "@types/sqlite3": "^3.1.8",
