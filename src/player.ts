@@ -1,6 +1,7 @@
 import { AppleMusicPlayer }          from './players/applemusic'
 import { MopidyPlayer, MopidyTrack } from './players/mopidy'
 import { MpdPlayer }                 from './players/mpd'
+import { MqttPlayer }                from './players/mqtt'
 
 import { PlayerType } from "./types";
 
@@ -30,4 +31,6 @@ export function getPlayer(type: PlayerType) {
     return new MpdPlayer();
   else if (["applemusic", "itunes"].includes(type))
     return new AppleMusicPlayer(type);
+  else if ("mqtt".includes(type))
+    return new MqttPlayer();
 }

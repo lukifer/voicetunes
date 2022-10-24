@@ -26,7 +26,7 @@ touch log.txt && chmod 777 log.txt
 git clone https://github.com/synesthesiam/en-us_kaldi-zamia.git
 mkdir -p ~/.config
 mv en-us_kaldi-zamia ~/.config/voice2json
-chmod 777 /home/pi/.config/voice2json/slot_programs/rhasspy/number
+chmod 777 ~/.config/voice2json/slot_programs/rhasspy/number
 sudo ln -s ~/.config/voice2json/ /root/.config/voice2json
 
 # Start mopidy on boot

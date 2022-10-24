@@ -12,7 +12,7 @@ import config from "../config";
 const { PLAYLIST_NAME } = config;
 
 type AppleMusicJxa = { method: () => void };
-var apple = requireDir('./applelib') as Record<string, AppleMusicJxa>;
+var apple = requireDir('../applelib') as Record<string, AppleMusicJxa>;
 
 export class AppleMusicPlayer implements Player {
   type = "applemusic" as PlayerType;

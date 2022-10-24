@@ -95,8 +95,8 @@ const configDefaults = {
 const config = Object.assign(
   {},
   configDefaults,
-  readJson(`${__dirname}/config.local.json`),
-  readJson(`${__dirname}/substitutions.local.json`)
+  readJson(`${__dirname}/../config.local.json`),
+  readJson(`${__dirname}/../substitutions.local.json`)
 ) as typeof configDefaults;
 
 export default {
