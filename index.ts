@@ -1,12 +1,12 @@
 import { exec }      from "child_process";
 import { promisify } from "util";
 
-import * as KB       from "./src/kb";
-import * as LED      from "./src/led";
-import { getPlayer } from "./src/player";
-import SFX           from "./src/sfx";
-import { wait }      from "./src/utils";
-import config        from "./src/config";
+import * as KB        from "./src/kb";
+import * as LED       from "./src/led";
+import { mqttListen } from "./src/mqttlisten";
+import { getPlayer }  from "./src/player";
+import SFX            from "./src/sfx";
+import config         from "./src/config";
 
 import {
   startListening,
@@ -33,6 +33,7 @@ const {
   KEY_RIGHT,
   KEY_UP,
   MIN_LISTEN_DURATION_MS,
+  MQTT_LISTEN_IP,
   PATH_RAMDISK,
   PLAYER,
   REC_BIN,
@@ -44,12 +45,12 @@ const execp = promisify(exec);
 
 export const player = getPlayer(PLAYER);
 
-async function buttonListen() {
-  const button = await KB.start(BT_BUTTON_NAME);
+async function buttonListen(buttonName: string) {
+  const button = await KB.start(buttonName);
 
   button.on("disconnect", async () => {
     console.log("button disconnected")
-    await buttonListen();
+    await buttonListen(BT_BUTTON_NAME);
   });
 
   let isListening = false;
@@ -90,7 +91,8 @@ player.start().then(async () => {
   SFX.init(AUDIO_DEVICE_OUT);
   LED.open();
 
-  await buttonListen();
+  if (BT_BUTTON_NAME) await buttonListen(BT_BUTTON_NAME);
+  if (MQTT_LISTEN_IP) mqttListen(MQTT_LISTEN_IP)
 
   LED.flair();
   await player.pause();

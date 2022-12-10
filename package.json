@@ -24,6 +24,7 @@
     "@types/rpio": "^2.4.2",
     "@types/shuffle-array": "^1.0.2",
     "@types/sqlite3": "^3.1.8",
+    "alsa-capture": "^0.3.0",
     "argparse": "^2.0.1",
     "input-event": "^1.2.6",
     "jest": "^29.2.0",
