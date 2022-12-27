@@ -5,8 +5,8 @@
 import {ArgumentParser} from "argparse";
 import * as fs          from "fs";
 import {Moment}         from "moment";
-import plist            from "plist";
-import sqlite3          from "sqlite3";
+import {parse}          from "plist";
+import {Database}       from "sqlite3";
 
 type Args = {
   db: string;
@@ -97,7 +97,7 @@ const map_types = (map: Record<string, string[]>) =>
 const get_parameterized = (table: string, keys: string[], len: number) =>
   `INSERT INTO ${table} (${keys.join(', ')}) VALUES (${[...Array(len)].fill("?")})`;
 
-const db_run = (db: sqlite3.Database, sql: string, vals: Array<string|boolean|number> = []) =>
+const db_run = (db: Database, sql: string, vals: Array<string|boolean|number> = []) =>
   new Promise<void>(resolve => db.run(sql, vals, (err: Error) => {
     if(err) console.log(err, sql, vals);
     return resolve();
@@ -105,7 +105,7 @@ const db_run = (db: sqlite3.Database, sql: string, vals: Array<string|boolean|nu
 
 export function plist_load(plist_path: string) {
   const xml = fs.readFileSync(plist_path.replace(/^~/, process.env.HOME));
-  const result = plist.parse(xml.toString());
+  const result = parse(xml.toString());
   return result as PlistLibrary;
 }
 
@@ -142,7 +142,7 @@ export function process_tracks(library: Library): [string, SqlInsert[]] {
       "play_count", "play_date", "start_time", "stop_time",
       "disabled", "bpm", "volume_adjustment", "normalization",
     ],
-    "INTEGER PRIMARY KEY": ["track_id"],
+    "INTEGER PRIMARY KEY NOT NULL": ["track_id"],
   })
 
   const track_fields = Array.from(all_keys).map((k: string) => `${k} ${fields[k] || ''}`)
@@ -212,7 +212,7 @@ export async function convert_to_db(args: Args) {
   const [table_tracks, insert_tracks] = process_tracks(library);
   const [table_playlists, table_playlist_items, insert_playlists] = process_playlists(library);
 
-  const db = new sqlite3.Database(args.db);
+  const db = new Database(args.db);
 
   await db_run(db, table_tracks);
   await db_run(db, table_playlists);
