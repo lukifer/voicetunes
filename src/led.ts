@@ -9,7 +9,7 @@ const { LED_MS, USE_LED } = config;
 const rndColor = (base: number, change: number) => between(100, base - change + rnd(change*2), 255);
 const Array12 = [...Array(12)];
 
-function Apa102spi (stringLength, clockDivider) {
+function Apa102spi (stringLength: number, clockDivider?: number) {
   clockDivider = typeof clockDivider !== 'undefined' ? clockDivider : 200
   this.bufferLength = stringLength * 4
   this.writeBuffer = Buffer.alloc(this.bufferLength, 'E0000000', 'hex')
@@ -24,7 +24,7 @@ Apa102spi.prototype.sendLeds = function () {
   rpio.spiWrite(this.writeBuffer, this.bufferLength)
 }
 
-Apa102spi.prototype.setLedColor = function (n, brightness, r, g, b) {
+Apa102spi.prototype.setLedColor = function (n: number, brightness: number, r: number, g: number, b: number) {
   n *= 4
   n += 4
   this.writeBuffer[n] = brightness | 0b11100000

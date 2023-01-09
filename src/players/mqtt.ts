@@ -4,10 +4,11 @@ import { PlayerType }          from "../types";
 
 let mqttClient: MqttClient = null;
 
-export function mqtt(ip: string) {
-  if (!mqttClient) mqttClient = connect(`mqtt://${ip}`);
-  return mqttClient
-}
+// export function mqtt(ip: string) {
+//   console.log(`connecting mqtt player to ${mqtt}`)
+//   if (!mqttClient) mqttClient = connect(`mqtt://${ip}`);
+//   return mqttClient
+// }
 
 export class MqttPlayer implements Player {
   type = "mqtt" as PlayerType;
@@ -25,6 +26,7 @@ export class MqttPlayer implements Player {
     return "paused"
   }
   async play() {
+    console.log('mqtt play')
   }
   async pause() {
   }
@@ -34,8 +36,10 @@ export class MqttPlayer implements Player {
     }
   }
   async previous() {
+    console.log('previous')
   }
   async next() {
+    console.log('next')
   }
   async seek(pos: number) {
   }
@@ -48,6 +52,7 @@ export class MqttPlayer implements Player {
   async clearTracks() {
   }
   async addTracks(uris: string[], at_position?: number) {
+    console.log('mqtt addTracks', uris)
   }
   async tracklistLength() {
     return 0 // fixme

@@ -382,3 +382,13 @@ export interface MessageMisc extends MessageBase {
             | "Nevermind"
             ;
 }
+
+export type VoiceTunesPayload =
+  {action: "ChangeVolume", volume: number}
+| {action: "SetVolume",  volume: number}
+| {action: "NextTrack"}
+| {action: "PreviousTrack"}
+| {action: "TogglePlayback"}
+| {action: "StartListening"}
+| {action: "StopListening"}
+;

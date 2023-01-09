@@ -1,4 +1,22 @@
 import { readJson } from "./utils";
+import { EntityFilterType } from "./types";
+
+export const emptyKeys = {
+  KEY_UP: "",
+  KEY_DOWN: "",
+  KEY_LEFT: "",
+  KEY_RIGHT: "",
+  KEY_PLAY: "",
+  KEY_LISTEN: "",
+} as const
+
+export const emptyFilters: Record<EntityFilterType, object> = {
+  albums: [],
+  artists: [],
+  genres: [],
+  playlists: [],
+  tracks: [],
+}
 
 const configDefaults = {
   ALIAS: {},
@@ -12,42 +30,16 @@ const configDefaults = {
   CLICK_DELAY_MS: 500,
   
   // Currently unused
-  CLICK_DOUBLE: {
-    KEY_UP: "",
-    KEY_DOWN: "",
-    KEY_LEFT: "",
-    KEY_RIGHT: "",
-    KEY_PLAY: "",
-    KEY_LISTEN: "",
-  },
-  CLICK_TRIPLE: {
-    KEY_UP: "",
-    KEY_DOWN: "",
-    KEY_LEFT: "",
-    KEY_RIGHT: "",
-    KEY_PLAY: "",
-    KEY_LISTEN: "",
-  },
+  CLICK_DOUBLE: emptyKeys,
+  CLICK_TRIPLE: emptyKeys,
 
   DEFAULT_ACTION: "",
   DENOISE_BIN: "",
   DENOISE_SOX: false as boolean | number,
   EXCLUDE_GENRES: null,
   FILE_EXTENSIONS: ["mp3", "m4a", "wav", "aiff", "flac", "alac"],
-  FILTER_DENY: {
-    albums: [],
-    artists: [],
-    genres: [],
-    playlists: [],
-    tracks: [],
-  },
-  FILTER_ONLY: {
-    albums: [],
-    artists: [],
-    genres: [],
-    playlists: [],
-    tracks: [],
-  },
+  FILTER_DENY: emptyFilters,
+  FILTER_ONLY: emptyFilters,
   FLAC_HACK: false,
   KEY_UP: 115,
   KEY_DOWN: 114,
@@ -62,7 +54,7 @@ const configDefaults = {
   MIN_RATING_BEST: 100,
   MQTT_LISTEN_IP: "",
   MQTT_PASSTHROUGH_INTENTS: [],
-  MQTT_IP: "",
+  MQTT_FORWARD_IP: "",
   PATH_ITUNES: "",
   PATH_DATABASE: "./itunes.sqlite3",
   PATH_MUSIC: "/home/pi/music",
@@ -74,13 +66,9 @@ const configDefaults = {
   RECSTOP_BIN: "sudo killall -q arecord",
   SENTENCE_BLOCKLIST: [] as string[],
   STARTING_YEAR: 1900,
-  SUBSTITUTIONS: {
-    albums: {},
-    artists: {},
-    genres: {},
-    playlists: {},
-    tracks: {},
-  },
+  SUBSTITUTIONS: Object.keys(emptyFilters).reduce((acc, k) => (
+    {...acc, [k]: {}}
+  ), {} as typeof emptyFilters),
   URL_MOPIDY: "ws://localhost:6680/mopidy/ws/",
   USE_LED: false,
   VOICE2JSON_BIN: "voice2json",

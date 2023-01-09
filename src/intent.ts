@@ -3,7 +3,7 @@ import { sql }  from "@databases/sqlite";
 
 import config     from "./config";
 import * as LED   from "./led";
-import { mqtt }   from "./players/mqtt";
+// import { mqtt }   from "./players/mqtt";
 import SFX        from "./sfx";
 import { player } from "../index";
 
@@ -53,7 +53,7 @@ const {
   ALIAS,
   DEFAULT_ACTION,
   MAX_QUEUED_TRACKS,
-  MQTT_IP,
+  MQTT_FORWARD_IP,
   MQTT_PASSTHROUGH_INTENTS,
   MIN_RATING,
   MIN_RATING_BEST,
@@ -439,7 +439,7 @@ export async function doIntent(raw: MessageBase) {
 
     default:
       if(MQTT_PASSTHROUGH_INTENTS.includes((msg as any).intentName as string)) {
-        mqtt(MQTT_IP).publish("voice2json", JSON.stringify(msg));
+        // mqtt(MQTT_FORWARD_IP).publish("voice2json", JSON.stringify(msg));
       } else {
         LED.flashErr();
         return err("command unrecognized", msg);
