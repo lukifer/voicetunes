@@ -21,7 +21,9 @@ type Keypress = {
 const lastPressTimestamps: Partial<Record<number, number>> = {}
 
 function checkDuplicatePress(code: number, ts: number) {
-  const isDiff = !lastPressTimestamps[code] || lastPressTimestamps[code] !== ts;
+  // const isDiff = !lastPressTimestamps[code] || lastPressTimestamps[code] !== ts;
+  const isDiff = !lastPressTimestamps[code] || (Math.abs(lastPressTimestamps[code] - ts) > 1);
+  // console.log('checkDuplicatePress', {isDiff, ts, last: lastPressTimestamps[code]})
   lastPressTimestamps[code] = ts;
   return !isDiff;
 }
@@ -38,6 +40,7 @@ export async function buttonListen(buttonName: string) {
   button.on("keypress", async (m?: Keypress) => {
     if (!m || typeof m !== "object") return;
     const {code, tssec} = m;
+    // console.log({code, tssec, m})
     if (checkDuplicatePress(code, tssec)) return;
     // console.log({code, m})
     switch (code) {

@@ -5,10 +5,12 @@ import { promisify }           from "util";
 // import { getPlayer }              from "./player";
 import { startListening, stopListening } from "./listen";
 import { doIntent, textToIntent }        from "./intent";
+import { player }                        from "../index";
 
 import { VoiceTunesPayload } from "./types";
 
 import config from "./config";
+
 const {
   AUDIO_DEVICE_IN,
   REC_BIN,
@@ -51,9 +53,14 @@ export function mqttListen(listenIp: string) {
               // console.log('mqtt stop')
               stopListening();
             } else if (action === "NextTrack") {
-
+              player.next()
             } else if (action === "PreviousTrack") {
-
+              player.previous()
+            } else if (action === "TogglePlayback") {
+              player.togglePlayback()
+            } else if (action === "ChangeVolume") {
+              // console.log("mqttListen ChangeVolume", {json})
+              // player.setVolume
             }
             break;
           case "voice2json":

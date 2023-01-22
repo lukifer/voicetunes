@@ -1,37 +1,29 @@
 import mpdapi, { MPDApi } from "mpd-api";
 
-import { MopidyTrack } from "./mopidy";
-import { Player }      from "../player";
-import { PlayerType }  from "../types";
+import { Player } from "../player";
 
-export type MpdStatus = {
-  volume: number;
-  repeat: boolean;
-  playlist: number;
-  state: 'play' | 'stop' | 'pause';
-  elapsed: number;
-}
+import {
+  MpdStatus,
+  MpdTrack,
+  PlayerType,
+} from "../types";
 
-export class MpdPlayer implements Player {
+export class MpdPlayer implements Player<MpdTrack> {
   type = "mpd" as PlayerType;
   client: null | MPDApi.ClientAPI = null;
-  constructor() {
-    (async () => {
-      this.client = await mpdapi.connect({
-        host: 'localhost',
-        port: 6600,
-      })
-    })()
+  constructor() {}
+  async start() {
+    this.client = await mpdapi.connect({
+      host: 'localhost',
+      port: 6600,
+    })
   }
-  async start() {}
   async getVolume() {
-    // return await this.client.api.playback.getvol<number>()
-    const status = await this.client.api.status.get<MpdStatus>();
-    return status.volume;
+    // const vol = await this.client.api.playback.getvol();
+    return 100
   }
   async setVolume(vol: number) {
-    await this.client.api.playback.setvol(`${vol}`);
-    // return mopidy.mixer.setVolume([vol]);
+    // await this.client.api.playback.setvol(`${vol}`);
   }
   async playerState() {
     const status = await this.client.api.status.get<MpdStatus>();
@@ -58,11 +50,10 @@ export class MpdPlayer implements Player {
   }
   async seek(pos: number) {
     await this.client.api.playback.seek(`${pos}`);
-    // return mopidy.playback.seek([pos]);
   }
   async currentTrackIndex() {
-    return 0; // TODO fixme
-    // return mopidy.tracklist.index();
+    const currentsong = await this.client.api.status.currentsong<MpdTrack>()
+    return currentsong.pos;
   }
   async getTimePosition() {
     const status = await this.client.api.status.get<MpdStatus>();
@@ -72,14 +63,18 @@ export class MpdPlayer implements Player {
     await this.client.api.queue.clear();
   }
   async addTracks(uris: string[], at_position?: number) {
-    await this.client.api.queue.add(uris[0], `${at_position}`);
+    try {
+      await this.client.api.queue.add(decodeURIComponent(uris[0]));
+    } catch(err) {
+      console.log("addTracks err", err)
+    }
   }
   async tracklistLength() {
-    return 0 // fixme
-    // return mopidy.tracklist.getLength();
+    const info = await this.client.api.queue.info()
+    return info.length
   }
   async getTracks() {
-    return await this.client.api.queue.info() as MopidyTrack[]; // fixme
-    // return mopidy.tracklist.getTracks();
+    const tracks = await this.client.api.queue.info<MpdTrack>();
+    return tracks;
   }
 }

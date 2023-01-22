@@ -392,3 +392,48 @@ export type VoiceTunesPayload =
 | {action: "StartListening"}
 | {action: "StopListening"}
 ;
+
+export type MpdStatus = {
+  repeat: boolean;
+  random: boolean;
+  single: boolean;
+  consume: boolean;
+  partition: string;
+  playlist: number;
+  playlistlength: number;
+  mixrampdb: number;
+  state: 'play' | 'stop' | 'pause';
+  song: number;
+  songid: number;
+  time: { elapsed: number; total: number; };
+  elapsed: number;
+  bitrate: string;
+  duration: number;
+  audio: {
+    sample_rate: number;
+    bits: number;
+    channels: number;
+    sample_rate_short: { value: number; unit: string; },
+    original_value: string;
+  },
+  nextsong: number;
+  nextsongid: number;
+}
+
+export type MpdTrack = {
+  file: string;
+  last_modified: string;
+  artist: string;
+  albumartist: string;
+  title: string;
+  album: string;
+  track: number;
+  date: string;
+  genre: string;
+  composer: string;
+  disc: number;
+  time: number;
+  duration: number;
+  pos: number;
+  id: number;
+}

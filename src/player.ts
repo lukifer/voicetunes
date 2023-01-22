@@ -5,7 +5,7 @@ import { MqttPlayer }                from './players/mqtt'
 
 import { PlayerType } from "./types";
 
-export interface Player {
+export interface Player<TrackObject extends object = object> {
   type: PlayerType;
   start: () => Promise<void>;
   getVolume: () => Promise<number>;
@@ -21,7 +21,7 @@ export interface Player {
   getTimePosition: () => Promise<number>;
   addTracks: (uris: string[], at_position?: number) => Promise<void>;
   tracklistLength: () => Promise<number>;
-  getTracks: () => Promise<MopidyTrack[]>;
+  getTracks: () => Promise<TrackObject[]>;
 };
 
 export function getPlayer(type: PlayerType) {

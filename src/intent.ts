@@ -75,9 +75,9 @@ const ordinalToNum: NumberMap =
   }), {} as NumberMap);
 
 const trackLocations = (files: SqlTrack[]) => files.map(f =>
-  PLAYER === "mopidy"
-  ? f.location.split("/iTunes%20Media/Music/")[1] || ""
-  : f.persistent_id
+  ["applemusic", "itunes"].includes(PLAYER)
+  ? f.persistent_id
+  : f.location.split("/iTunes%20Media/Music/")[1] || ""
 )
 
 export const whereYear = (year: number, range?: number) =>

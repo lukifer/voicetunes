@@ -35,7 +35,7 @@ export type MopidyTrack = {
 
 let mopidy: Mopidy | null = null;
 
-export class MopidyPlayer implements Player {
+export class MopidyPlayer implements Player<MopidyTrack> {
   type = "mopidy" as PlayerType;
   constructor() {
     if (!mopidy) mopidy = new Mopidy({ webSocketUrl: URL_MOPIDY });

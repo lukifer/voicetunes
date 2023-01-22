@@ -19,9 +19,8 @@ export class AppleMusicPlayer implements Player {
   constructor(type: PlayerType) {
     this.type = type;
   }
-  // jxa<T = void>(foo: AppleMusicJxa, replace: StringMap = {}) {
-  jxa<T = void>(foo: {method: () => void}, replace: StringMap = {}) {
-    const {method} = foo
+  jxa<T = void>(msg: {method: () => void}, replace: StringMap = {}) {
+    const {method} = msg
     return new Promise<T>((resolve, reject) => {
       const methodStr = stringify(method);
       const replacePairs = Object.entries({
