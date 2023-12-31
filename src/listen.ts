@@ -4,23 +4,23 @@ import AlsaCapture     from "alsa-capture";
 import fs              from 'fs';
 
 import * as LED from "./led";
-import * as SFX from "./sfx";
-import config   from "./config";
+// import * as SFX from "./sfx";
 
-import { now, wait } from "./utils";
-import { doIntent }  from "./intent";
+// import { now, wait } from "./utils";
+// import { doIntent }  from "./intent";
 import { mqttClient } from "./mqttlisten";
 
+import { loadConfig } from "./config";
 const {
-  AUDIO_DEVICE_IN,
-  AUDIO_DEVICE_OUT,
+  // AUDIO_DEVICE_IN,
+  // AUDIO_DEVICE_OUT,
   DENOISE_BIN,
   DENOISE_SOX,
-  MIN_LISTEN_DURATION_MS,
+  // MIN_LISTEN_DURATION_MS,
   PATH_RAMDISK,
-  REC_BIN,
-  VOICE2JSON_BIN,
-} = config;
+  // REC_BIN,
+  // VOICE2JSON_BIN,
+} = await loadConfig();
 
 const execp = promisify(exec);
 

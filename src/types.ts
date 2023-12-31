@@ -264,6 +264,8 @@ export type MessageIntent =
 | "WhatIsPlaying"
 | "RestartMopidy"
 | "Nevermind"
+| "Restart"
+| "Shutdown"
 ;
 
 export interface MessageBase {
@@ -380,6 +382,8 @@ export interface MessageMisc extends MessageBase {
             | "WhatIsPlaying"
             | "RestartMopidy"
             | "Nevermind"
+            | "Restart"
+            | "Shutdown"
             ;
 }
 
@@ -436,4 +440,80 @@ export type MpdTrack = {
   duration: number;
   pos: number;
   id: number;
+}
+
+export type Keys = {
+  KEY_UP: number | string;
+  KEY_DOWN: number | string;
+  KEY_LEFT: number | string;
+  KEY_RIGHT: number | string;
+  KEY_PLAY: number | string;
+  KEY_LISTEN: number | string;
+}
+
+export type Server = {
+  ADDRESS: string;
+  MUSIC_PATH?: string;
+  VOICETUNES_PATH?: string;
+}
+
+export type Config = Keys & {
+  ALIAS: Record<string, string>;
+  ALLOW_SHUTDOWN?: boolean;
+  AUDIO_DEVICE_IN: string;
+  AUDIO_DEVICE_OUT: string;
+  BT_BUTTON_NAME: string;
+  // BT_BYTE_IS_DOWN: number;
+  // BT_BYTE_KEY_CODE: number;
+  // BT_USAGE_PAGE: null | number;
+  // CLICK_DELAY_MS: number;
+  CLICK_DOUBLE?: Partial<Keys>;
+  CLICK_TRIPLE?: Partial<Keys>;
+  DEFAULT_ACTION?: string;
+  DENOISE_BIN?: string;
+  DENOISE_SOX?: boolean | number;
+  EXCLUDE_GENRES?: null | string[];
+  FILE_EXTENSIONS: string[];
+  FILTER_DENY?: Record<EntityFilterType, Array<string>>,
+  FILTER_ONLY?: Record<EntityFilterType, Array<string>>,
+  FLAC_HACK?: boolean;
+  LED_MS: number;
+  MAX_QUEUED_TRACKS: number;
+  MIN_LISTEN_DURATION_MS: number;
+  MIN_RATING: number;
+  MIN_RATING_BEST: number;
+  MOPIDY_URL?: string;
+  MQTT_FORWARD_IP?: string;
+  MQTT_LISTEN_IP?: string;
+  MQTT_PASSTHROUGH_INTENTS?: string[];
+  MQTT_PUBLISH_STATUS?: boolean;
+  PATH_ITUNES?: string;
+  PATH_DATABASE: string;
+  PATH_MUSIC: string;
+  PATH_RAMDISK?: string;
+  PLAYER: PlayerType;
+  PLAYLIST_NAME: string;
+  PREV_TRACK_MS: number;
+  PULL?: Server & {
+    PATH_ITUNES?: string;
+  };
+  PUSH?: Server & {
+    VOICE2JSON_PROFILE?: string
+  };
+  REC_BIN: string;
+  RECSTOP_BIN: string;
+  SENTENCE_BLOCKLIST?: string[];
+  STARTING_YEAR: number;
+  SUBSTITUTIONS?: Record<EntityFilterType, Record<string, string>>,
+  USE_LED?: boolean;
+  VOICE2JSON_CMD: string;
+  VOICE2JSON_BIN: string;
+  VOICE2JSON_PROFILE: string;
+  WALKIE_TALKIE?: boolean;
+  WAV?: {
+    BEEP?: string;
+    ERROR?: string;
+    OK?: string;
+    UNRECOGNIZED?: string;
+  };
 }

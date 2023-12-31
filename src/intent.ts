@@ -1,9 +1,7 @@
 import Shuffler from "shuffle-array";
 import { sql }  from "@databases/sqlite";
 
-import config     from "./config";
 import * as LED   from "./led";
-// import { mqtt }   from "./players/mqtt";
 import SFX        from "./sfx";
 import { player } from "../index";
 
@@ -49,11 +47,12 @@ import {
   StringTuple,
 } from "./types";
 
+import { loadConfig } from "./config";
 const {
   ALIAS,
+  ALLOW_SHUTDOWN,
   DEFAULT_ACTION,
   MAX_QUEUED_TRACKS,
-  MQTT_FORWARD_IP,
   MQTT_PASSTHROUGH_INTENTS,
   MIN_RATING,
   MIN_RATING_BEST,
@@ -62,7 +61,7 @@ const {
   USE_LED,
   VOICE2JSON_BIN,
   VOICE2JSON_PROFILE,
-} = config;
+} = await loadConfig();
 
 const years   = readJson("./data/years.json");
 const decades = readJson("./data/decades.json");
@@ -416,26 +415,26 @@ export async function doIntent(raw: MessageBase) {
     // case "Retrain":
     //   await train();
     //   break;
-    //
-    // case "Restart":
-    //   if(ALLOW_SHUTDOWN) {
-    //     SFX.ok();
-    //     exec("sudo reboot now");
-    //   } else {
-    //     SFX.error();
-    //     LED.flashErr();
-    //   }
-    //   break;
-    //
-    // case "Shutdown":
-    //   if(ALLOW_SHUTDOWN) {
-    //     SFX.ok();
-    //     exec("sudo shutdown now");
-    //   } else {
-    //     SFX.error();
-    //     LED.flashErr();
-    //   }
-    //   break;
+    
+    case "Restart":
+      if(ALLOW_SHUTDOWN) {
+        SFX.ok();
+        await execp("sudo reboot now");
+      } else {
+        SFX.error();
+        LED.flashErr();
+      }
+      break;
+    
+    case "Shutdown":
+      if(ALLOW_SHUTDOWN) {
+        SFX.ok();
+        await execp("sudo shutdown now");
+      } else {
+        SFX.error();
+        LED.flashErr();
+      }
+      break;
 
     default:
       if(MQTT_PASSTHROUGH_INTENTS.includes((msg as any).intentName as string)) {
@@ -470,6 +469,8 @@ export async function playTracks(tracks: string[], opts: PlayOptions = {}) {
     clearTimeout(loadingTimer);
     loadingTimer = null;
   }
+
+  // console.log('playTracks', {tracks})
 
   // queue starting track (random or specific) and start playing immediately
   const playIdx = shuffle ? rnd(tracks.length) : jumpTo;

@@ -1,11 +1,11 @@
 import { Gpio }  from "onoff";
 import rpio      from "rpio"
 
-import config           from "./config";
 import { between, rnd } from "./utils";
 import { LedPixel }     from "./types";
 
-const { LED_MS, USE_LED } = config;
+import { loadConfig } from "./config";
+const { LED_MS, USE_LED } = await loadConfig();
 const rndColor = (base: number, change: number) => between(100, base - change + rnd(change*2), 255);
 const Array12 = [...Array(12)];
 

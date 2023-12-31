@@ -1,12 +1,13 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "nodenext",
     "esModuleInterop": true,
     "moduleResolution": "node",
     "outDir": "dist",
     "resolveJsonModule": true,
     "baseUrl": ".",
     "skipLibCheck": true,
+    "target": "es2020",
     "typeRoots": [ "./types", "./node_modules/@types"]
   },
   "exclude": [

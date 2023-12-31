@@ -1,5 +1,6 @@
 node_modules
 config.local.json
+config.local.ts
 cache.local.json
 substitutions.local.json
 .DS_Store

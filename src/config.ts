@@ -1,5 +1,7 @@
-import { readJson } from "./utils";
-import { EntityFilterType } from "./types";
+import fs   from "fs";
+import path from "path";
+
+import { Config, PlayerType } from "./types";
 
 export const emptyKeys = {
   KEY_UP: "",
@@ -10,36 +12,16 @@ export const emptyKeys = {
   KEY_LISTEN: "",
 } as const
 
-export const emptyFilters: Record<EntityFilterType, object> = {
-  albums: [],
-  artists: [],
-  genres: [],
-  playlists: [],
-  tracks: [],
-}
-
-const configDefaults = {
+let defaultConfig: Config = {
   ALIAS: {},
   ALLOW_SHUTDOWN: false,
   AUDIO_DEVICE_IN: "ac108",
   AUDIO_DEVICE_OUT: "dmixer",
   BT_BUTTON_NAME: "Tunai Button",
-  BT_BYTE_IS_DOWN: 28,
-  BT_BYTE_KEY_CODE: 12,
-  BT_USAGE_PAGE: null as null | number,
-  CLICK_DELAY_MS: 500,
-  
-  // Currently unused
-  CLICK_DOUBLE: emptyKeys,
-  CLICK_TRIPLE: emptyKeys,
-
-  DEFAULT_ACTION: "",
-  DENOISE_BIN: "",
-  DENOISE_SOX: false as boolean | number,
+  CLICK_DOUBLE: emptyKeys, // current unused
+  CLICK_TRIPLE: emptyKeys, // current unused
   EXCLUDE_GENRES: null,
   FILE_EXTENSIONS: ["mp3", "m4a", "wav", "aiff", "flac", "alac"],
-  FILTER_DENY: emptyFilters,
-  FILTER_ONLY: emptyFilters,
   FLAC_HACK: false,
   KEY_UP: 115,
   KEY_DOWN: 114,
@@ -52,43 +34,48 @@ const configDefaults = {
   MIN_LISTEN_DURATION_MS: 1000,
   MIN_RATING: 80,
   MIN_RATING_BEST: 100,
-  MQTT_LISTEN_IP: "",
-  MQTT_PASSTHROUGH_INTENTS: [],
-  MQTT_FORWARD_IP: "",
-  PATH_ITUNES: "",
+  MOPIDY_URL: "ws://localhost:6680/mopidy/ws/",
   PATH_DATABASE: "./itunes.sqlite3",
   PATH_MUSIC: "/home/pi/music",
   PATH_RAMDISK: "/tmp/ramdisk",
-  PLAYER: "mopidy" as "mopidy" | "mpd" | "applemusic" | "itunes",
+  PLAYER: "mopidy" as PlayerType,
   PLAYLIST_NAME: "voicetunes",
   PREV_TRACK_MS: 15000,
-  REC_BIN: "sudo arecord -q -t raw --duration=20 --rate=16000 --format=S16_LE", // `sudo parec --raw --format=s16le --channels=1 --rate=16000`
+  REC_BIN: "sudo arecord -q -t raw --duration=20 --rate=16000 --format=S16_LE",
+  // REC_BIN: `sudo parec --raw --format=s16le --channels=1 --rate=16000`
   RECSTOP_BIN: "sudo killall -q arecord",
-  SENTENCE_BLOCKLIST: [] as string[],
   STARTING_YEAR: 1900,
-  SUBSTITUTIONS: Object.keys(emptyFilters).reduce((acc, k) => (
-    {...acc, [k]: {}}
-  ), {} as typeof emptyFilters),
-  URL_MOPIDY: "ws://localhost:6680/mopidy/ws/",
   USE_LED: false,
+  VOICE2JSON_CMD: "",
   VOICE2JSON_BIN: "voice2json",
   VOICE2JSON_PROFILE: "/home/pi/.config/voice2json",
-  WALKIE_TALKIE: true,
-  WAV_BEEP: "",
-  WAV_ERROR: "",
-  WAV_OK: "",
-  WAV_UNRECOGNIZED: "",
 };
 
-// To override defaults, create a config.local.json with matching keys
-const config = Object.assign(
-  {},
-  configDefaults,
-  readJson(`${__dirname}/../config.local.json`),
-  readJson(`${__dirname}/../substitutions.local.json`)
-) as typeof configDefaults;
+let config: Config = null;
 
-export default {
-  ...config,
-  "VOICE2JSON": `${config["VOICE2JSON_BIN"]} --profile ${config["VOICE2JSON_PROFILE"]}`
-};
+export async function loadConfig(): Promise<Config> {
+  const tsConfigPath = path.resolve(__dirname, "../config.local.ts");
+  const jsonConfigPath = path.resolve(__dirname, "../config.local.json");
+
+  if (config) return config;
+
+  let localConfig: Partial<Config> = null;
+  if (fs.existsSync(tsConfigPath)) {
+    localConfig = (await import(tsConfigPath)).default;
+  }
+  else if (fs.existsSync(jsonConfigPath)) {
+    localConfig = await import(jsonConfigPath);
+  }
+  // else {
+  //   // throw new Error("No configuration found!");
+  // }
+
+  if (localConfig) {
+    config = {
+      ...defaultConfig,
+      ...(localConfig ?? {}),
+    }
+  }
+
+  return config;
+}

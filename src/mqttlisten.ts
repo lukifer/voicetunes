@@ -9,15 +9,14 @@ import { player }                        from "../index";
 
 import { VoiceTunesPayload } from "./types";
 
-import config from "./config";
-
+import { loadConfig } from "./config";
 const {
   AUDIO_DEVICE_IN,
   REC_BIN,
   RECSTOP_BIN,
   VOICE2JSON_BIN,
   VOICE2JSON_PROFILE,
-} = config;
+} = await loadConfig();
 
 export let mqttClient: MqttClient;
 
@@ -39,7 +38,7 @@ export function mqttListen(listenIp: string) {
   mqttClient.on("connect", () => {
     mqttClient.subscribe(["voicetunes", "voice2json", "text2json"], () => {
       mqttClient.on("message", async (topic: string, message: string) => {
-        const msg = message.toString()
+        const msg = message.toString().trim()
         let json: Record<string, string> = {}
         try { json = JSON.parse(msg); } catch(err) {}
         const action = json.action || msg
@@ -65,8 +64,8 @@ export function mqttListen(listenIp: string) {
             break;
           case "voice2json":
             try {
+              // console.log({msg})
               const json = JSON.parse(msg)
-              // console.log(json)
               await doIntent(json);
             } catch(err) { console.log("voice2json parse went awry", msg); }
             break;

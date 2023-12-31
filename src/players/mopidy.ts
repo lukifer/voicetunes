@@ -3,11 +3,11 @@ import Mopidy from "mopidy";
 import { Player }     from "../player";
 import { PlayerType } from "../types";
 
-import config from "../config";
+import { loadConfig } from "../config";
 const {
   PATH_MUSIC,
-  URL_MOPIDY,
-} = config;
+  MOPIDY_URL,
+} = await loadConfig();
 
 // TEMP/TODO: Dedupe these from types/mopidy
 export type MopidyArtist = {
@@ -38,7 +38,7 @@ let mopidy: Mopidy | null = null;
 export class MopidyPlayer implements Player<MopidyTrack> {
   type = "mopidy" as PlayerType;
   constructor() {
-    if (!mopidy) mopidy = new Mopidy({ webSocketUrl: URL_MOPIDY });
+    if (!mopidy) mopidy = new Mopidy({ webSocketUrl: MOPIDY_URL });
   }
   start() {
     return new Promise<void>((resolve) => {

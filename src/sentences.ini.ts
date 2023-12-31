@@ -11,8 +11,8 @@ import {
   VoxSentence,
 } from "./types";
 
-import config from "./config";
-const { ALIAS } = config;
+import { loadConfig } from "./config";
+const { ALIAS } = await loadConfig();
 
 const years        = readJson("./data/years.json") as NumberMap;
 const decades      = readJson("./data/decades.json") as NumberMap;

@@ -1,3 +1,5 @@
+import { assertParse } from "typia";
+
 import { exec }                from "child_process";
 import * as fs                 from "fs";
 import { promisify }           from "util";
@@ -19,6 +21,10 @@ export function removeNth<T>(arr: Array<T>, n: number): Array<T> {
 export const readJson = (path: string) => fs.existsSync(path)
   ? JSON.parse(fs.readFileSync(path, {encoding: "utf-8"}))
   : {};
+
+export const typedReadJson = <T>(path: string): Partial<T> => fs.existsSync(path)
+? assertParse<T>(fs.readFileSync(path, {encoding: "utf-8"}))
+: {};
 
 export const writeCache = (data: PlayStateCache) => fs.writeFileSync(
   `${__dirname}/cache.local.json`,

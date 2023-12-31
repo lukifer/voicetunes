@@ -1,6 +1,8 @@
 import * as KB  from "../kb";
-import config   from "../config";
 import { mqtt } from "../mqttlisten";
+
+import { loadConfig } from "../config";
+const config = await loadConfig();
 
 const {
   BT_BUTTON_NAME,

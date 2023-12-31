@@ -4,8 +4,8 @@ import { NumberMap } from "../src/types";
 
 const numberWords = (n: number, noAnd: boolean = true) => writtenNumber(n, {noAnd}).replace(/-/g, " ");
 
-import config from "../src/config";
-const { STARTING_YEAR } = config;
+import { loadConfig } from "../src/config";
+const { STARTING_YEAR } = await loadConfig();
 
 const currentYear = (new Date()).getFullYear();
 const baseYears = [
@@ -32,6 +32,7 @@ const years = baseYears.reduce((yrs, year) => {
 }, {} as NumberMap);
 
 fs.writeFileSync(
-  `${__dirname}/years.json`,
+  // `${__dirname}/years.json`,
+  "../data/years.json",
   JSON.stringify(years, undefined, 2)
 );

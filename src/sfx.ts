@@ -1,14 +1,11 @@
 import { exec }      from "child_process";
 import { promisify } from "util";
 
-import config from "./config";
+import { loadConfig } from "./config";
 const {
   PATH_RAMDISK,
-  WAV_BEEP,
-  WAV_ERROR,
-  WAV_OK,
-  WAV_UNRECOGNIZED,
-} = config;
+  WAV,
+} = await loadConfig();
 
 const execp = promisify(exec);
 
@@ -42,8 +39,8 @@ export default {
   init,
   play,
   speak,
-  beep:         async () => await play(WAV_BEEP),
-  error:        async () => await play(WAV_ERROR),
-  ok:           async () => await play(WAV_OK),
-  unrecognized: async () => await play(WAV_UNRECOGNIZED),
+  beep:         async () => WAV.BEEP         && await play(WAV.BEEP),
+  error:        async () => WAV.ERROR        && await play(WAV.ERROR),
+  ok:           async () => WAV.OK           && await play(WAV.OK),
+  unrecognized: async () => WAV.UNRECOGNIZED && await play(WAV.UNRECOGNIZED),
 };

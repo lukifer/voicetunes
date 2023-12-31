@@ -12,7 +12,9 @@ import {
   iTunesSubstitutions,
 } from "./types";
 
-import config from "./config";
+import { loadConfig } from "./config";
+
+const config = await loadConfig()
 const {
   FILTER_DENY,
   FILTER_ONLY,

@@ -3,17 +3,15 @@ import { buttonListen } from "./src/listeners/button";
 import { mqttListen }   from "./src/mqttlisten";
 import { getPlayer }    from "./src/player";
 import SFX              from "./src/sfx";
-import config           from "./src/config";
 
-import {mqttClient} from './src/mqttlisten'
-
+import { loadConfig } from "./src/config";
 const {
   AUDIO_DEVICE_OUT,
   BT_BUTTON_NAME,
   MQTT_FORWARD_IP,
   MQTT_LISTEN_IP,
   PLAYER,
-} = config;
+} = await loadConfig();
 
 export const player = getPlayer(PLAYER);
 

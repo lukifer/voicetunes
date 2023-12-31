@@ -8,8 +8,8 @@ import {
 } from "../types";
 import { Player } from "../player";
 
-import config from "../config";
-const { PLAYLIST_NAME } = config;
+import { loadConfig } from "../config";
+const { PLAYLIST_NAME } = await loadConfig();
 
 type AppleMusicJxa = { method: () => void };
 var apple = requireDir('../applelib') as Record<string, AppleMusicJxa>;

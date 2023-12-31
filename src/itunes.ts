@@ -29,14 +29,14 @@ import {
   pathToLocationUri,
 } from "./utils";
 
-import config from "./config";
+import { loadConfig } from "./config";
 const {
   EXCLUDE_GENRES,
   FLAC_HACK,
   MIN_RATING,
   FILE_EXTENSIONS,
   SENTENCE_BLOCKLIST,
-} = config;
+} = await loadConfig();
 
 const knex = knexConnect();
 

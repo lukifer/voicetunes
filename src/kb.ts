@@ -42,19 +42,13 @@ export function start(deviceName: string): Promise<NodeJS.EventEmitter> {
       keyboardConnectTimer = null;
     }
     (async function keyboardConnect() {
-      console.log('keyboardConnect')
       const inputPath = await findDeviceInput(deviceName);
       if (inputPath) {
         try {
-        keyboard = new InputEvent.Keyboard(new InputEvent(inputPath));
-//         keyboard.on('keypress', (m: any) => console.log('derp keypress', m));
-//         keyboard.on('data', (m: any) => console.log('derp data', m));
-//         keyboard.on('close', (m: any) => console.log('derp close', m));
+          keyboard = new InputEvent.Keyboard(new InputEvent(inputPath));
         } catch(err) { console.log("catch", err); }
       }
-      console.log({keyboard_yes: !!keyboard})
       if (keyboard) {
-//         console.log({keyboard, on: keyboard.on})
         keyboardConnectTimer = null;
         keyboard.on("error", (m: any) => console.log("kb_error", m));
         resolve(keyboard);
