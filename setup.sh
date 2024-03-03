@@ -31,3 +31,7 @@ sudo ln -s ~/.config/voice2json/ /root/.config/voice2json
 
 # Start mopidy on boot
 sudo systemctl enable mopidy
+
+# For reference
+# systemctl --user restart pipewire
+# sudo apt-get remove apparmor

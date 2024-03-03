@@ -23,7 +23,7 @@ const ordinalLabels = ordinalWords.map((x: string[]) => x[1]);
 const numbers = [...Array(30)].map(n => writtenNumber(n).replace(/-/g, " "));
 
 async function get(which: EntityFilterType) {
-  const sentences = await dbQuery(sql`SELECT sentence FROM ${sql.ident(`vox_${which}`)}`) as VoxSentence[] || []
+  const sentences = await dbQuery(sql`SELECT sentence FROM ${sql.ident(`vox_${which}`)} WHERE sentence != 'something'`) as VoxSentence[] || []
   return sentences.map(({sentence}) => sentence);
 }
 

@@ -5,9 +5,9 @@ if [[ $# -eq 0 ]] ; then
 fi
 
 npm i
-ts-node src/itunes-to-sql.ts --overwrite
-ts-node src/itunes.ts
-ts-node src/sentences.ini.ts
+npx ts-node src/itunes-to-sql.ts --overwrite
+npx ts-node src/itunes.ts
+npx ts-node src/sentences.ini.ts
 
 touch data/sounds_like.txt
 
@@ -24,5 +24,6 @@ do
     ssh "$url" 'cd ~/.config/voice2json/ && cat sentences.base.ini sentences.music.ini > sentences.ini'
 
     # FIXME: figure out how to add this PATH remotely on MacOS's SSH environment
-    ssh "$url" 'export PATH=/usr/local/bin:$PATH; voice2json train-profile'
+    ssh "$url" 'voice2json train-profile'
+    # ssh "$url" 'export PATH=/usr/local/bin:$PATH; /root/voice2json/voice2json.sh -p /root/.config/voice2json/ train-profile'
 done

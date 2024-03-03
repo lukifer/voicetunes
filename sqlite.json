@@ -1,0 +1,13 @@
+{
+  "client": "sqlite3",
+  "connection": {
+    "filename": "./itunes.sqlite3"
+  },
+  "columnNameCasing": "snake",
+  "enumKeyCasing": "snake",
+  "enumNameCasing": "snake",
+  "tableNameCasing": "pascal",
+  "singularTableNames": true,
+  "filename": "src/generated/dbTypes",
+  "useNullAsDefault": true
+}

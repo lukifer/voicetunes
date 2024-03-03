@@ -1,6 +1,5 @@
 import * as fs from "fs";
 import os      from "os";
-import Mopidy  from "mopidy";
 
 import { dbRaw }                   from "../src/db";
 import { doIntent, playTracks }    from "../src/intent";
@@ -43,35 +42,13 @@ const basePathUri = `file://${basePath}`;
 const itunesPath = `${os.homedir()}/Music/iTunes/iTunes Media/Music/`;
 const testDbSql = fs.readFileSync(`${__dirname}/testDb.sql`, {encoding: "utf-8"})
 
-jest.mock("../config", () => {
-  const originalModule = jest.requireActual("../config");
+jest.mock("../src/config", () => {
+  const originalModule = jest.requireActual("../src/config");
   return {
     ...originalModule.default,
     PATH_DATABASE: "",
+    PLAYER: "mopidy"
   };
-});
-
-jest.mock("mopidy", () => {
-  let seekPos = 0;
-  (global as any).mockMopidy = {
-    tracklist: {
-      add:       jest.fn(),
-      clear:     jest.fn(),
-      index:     jest.fn(() => 0),
-      shuffle:   jest.fn(),
-      getTracks: jest.fn(() => []),
-    },
-    playback: {
-      play: jest.fn(),
-      seek: jest.fn().mockImplementation((ms: number) => seekPos = ms),
-      next: jest.fn(),
-      previous: jest.fn(),
-      pause: jest.fn(),
-      getTimePosition: jest.fn().mockImplementation(() => seekPos),
-    },
-    on: jest.fn(),
-  } as any as Mopidy;
-  return jest.fn().mockImplementation(() => (global as any).mockMopidy);
 });
 
 function expectTracksAdded(uris: string[]) {

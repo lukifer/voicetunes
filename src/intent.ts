@@ -1,5 +1,4 @@
 import Shuffler from "shuffle-array";
-import { sql }  from "@databases/sqlite";
 
 import config     from "./config";
 import * as LED   from "./led";
@@ -13,9 +12,16 @@ import {
 } from "./scrub"
 
 import {
-  dbQuery,
-  dbRawValue,
-} from "./db";
+  queryTracksByArtist,
+  queryRandomAlbumByArtist,
+  queryTrack,
+  queryTracksByArtistAlbumNumber,
+  queryTracksByAlbum,
+  queryTracksByGenre,
+  queryTracksByPlaylist,
+  queryTracksByYear,
+  trackLocations,
+} from "./query";
 
 import {
   arrayWrap,
@@ -46,7 +52,6 @@ import {
   MessageJumpToTrack,
   NumberMap,
   PlayStateCache,
-  SqlTrack,
   StringTuple,
 } from "./types";
 
@@ -58,15 +63,11 @@ const {
   MQTT_PASSTHROUGH_INTENTS,
   MIN_RATING,
   MIN_RATING_BEST,
-  PLAYER,
   PREV_TRACK_MS,
   USE_LED,
   VOICE2JSON_BIN,
   VOICE2JSON_PROFILE,
 } = config;
-
-const years   = readJson("./data/years.json");
-const decades = readJson("./data/decades.json");
 
 const ord = readJson("./data/ordinalWords.json");
 const ordinalToNum: NumberMap =
@@ -74,17 +75,6 @@ const ordinalToNum: NumberMap =
     ...acc,
     [x[1]]: parseInt(x[0]) - 1,
   }), {} as NumberMap);
-
-const trackLocations = (files: SqlTrack[]) => files.map(f =>
-  PLAYER === "mopidy"
-  ? f.location.split("/iTunes%20Media/Music/")[1] || ""
-  : f.persistent_id
-)
-
-export const whereYear = (year: number, range?: number) =>
-  range
-  ? sql`AND t.year >= ${year} AND t.year <= ${year+range}`
-  : sql`AND t.year = ${year}`;
 
 let cachedIntents: {[text: string]: Message} = {};
 export async function textToIntent(text: string, allowedIntents?: MessageIntent[]): Promise<Message | null> {
@@ -128,18 +118,13 @@ export async function textToIntent(text: string, allowedIntents?: MessageIntent[
 
 async function doPlayArtist(msg: MessagePlayArtist, best: boolean = false) {
   const { slots } = msg;
-  const queue = slots.playaction === "queue";
   if(!slots?.artist) return err("no artist", msg);
   const minRating = best ? MIN_RATING_BEST : MIN_RATING;
-  const artistTracks = await dbQuery(sql`
-    SELECT t.location, t.persistent_id
-    FROM vox_artists va
-    INNER JOIN tracks t ON va.artist = t.artist
-    WHERE va.sentence = ${slots.artist} AND t.rating >= ${minRating}
-  `) as SqlTrack[];
+  const artistTracks = await queryTracksByArtist(msg, minRating);
   if(!artistTracks?.length) {
     return err("no tracks", msg);
   } else {
+    const queue = slots.playaction === "queue";
     await playTracks(trackLocations(artistTracks), { shuffle: true, queue });
   }
 }
@@ -147,71 +132,35 @@ async function doPlayArtist(msg: MessagePlayArtist, best: boolean = false) {
 async function doPlayRandomAlbumByArtist(msg: MessagePlayRandomAlbumByArtist) {
   const { slots } = msg;
   if(!slots?.artist) return err("no albums for artist", msg);
-  const [{ count }] = await dbQuery(sql`
-    SELECT COUNT(DISTINCT t.album) as count
-    FROM vox_artists va
-    INNER JOIN tracks t ON va.artist = IFNULL(t.album_artist, t.artist)
-    WHERE va.sentence = ${slots.artist} AND album IS NOT NULL AND year IS NOT NULL
-    GROUP BY va.sentence
-  `) as Array<{count: number}>;
-  if(count) await doIntent({
-    ...msg,
-    intent: { name: "PlayArtistAlbumByNumber" },
-    slots: {
-      artist: slots.artist,
-      // albumnum: ord[(Math.random() * count).toFixed()]?.[1] || "first",
-      albumnum: ord[rnd(count)]?.[1] || "first",
-    },
-  });
+  const albumTracks = await queryRandomAlbumByArtist(msg);
+  if(!albumTracks?.length) {
+    return err("no tracks", msg);
+  } else {
+    const queue = slots.playaction === "queue";
+    await playTracks(trackLocations(albumTracks), { queue });
+  }
 }
 
 async function doPlayArtistAlbumByNumber(msg: MessagePlayArtistAlbumByNumber) {
   const { slots } = msg;
   if(!slots?.albumnum || !slots?.artist) return err("no artist or album number", msg);
-  const queue = slots.playaction === "queue";
-  const albumIndex = ordinalToNum[slots.albumnum] || 0;
-  const direction = dbRawValue(slots.albumnum === "latest" ? "DESC" : "ASC");
-  const albumNumTracks = await dbQuery(sql`
-    SELECT tracks.location, tracks.persistent_id
-    FROM tracks
-    INNER JOIN (
-      SELECT t.album, IFNULL(t.album_artist, t.artist) as album_artist
-      FROM vox_artists va
-      INNER JOIN tracks t ON va.artist = IFNULL(t.album_artist, t.artist)
-      WHERE va.sentence = ${slots.artist}
-        AND t.album IS NOT NULL
-        AND t.year IS NOT NULL
-        AND t.compilation IS NULL
-      GROUP BY t.album, t.year
-      ORDER BY t.year ${direction}
-      LIMIT 1 OFFSET ${albumIndex}
-    ) as a ON a.album = tracks.album AND a.album_artist = IFNULL(tracks.album_artist, tracks.artist)
-    ORDER BY tracks.disc_number ASC, tracks.track_number ASC
-  `) as SqlTrack[];
+  const albumNumTracks = await queryTracksByArtistAlbumNumber(msg);
   if(!albumNumTracks?.length) {
-    return err(`no tracks found for ${slots.artist} album #${albumIndex}`, msg);
+    return err(`no tracks found for ${slots.artist} ${slots.albumnum} album`, msg);
   } else {
+    const queue = slots.playaction === "queue";
     playTracks(trackLocations(albumNumTracks), { queue });
   }
 }
 
 export async function doPlayAlbum(msg: MessagePlayAlbum) {
   const { slots } = msg;
-  const queue = slots.playaction === "queue";
-  const albumTracks = await dbQuery(sql`
-    SELECT t.location, t.artist, t.persistent_id
-    FROM vox_albums va
-    INNER JOIN tracks t ON va.album = t.album AND (va.artist IS NULL OR va.artist = IFNULL(t.album_artist, t.artist))
-    WHERE va.sentence = ${slots.album}
-    GROUP BY t.track_id
-    ORDER BY t.disc_number ASC, t.track_number ASC
-  `) as SqlTrack[];
+  const albumTracks = await queryTracksByAlbum(msg);
   if(!albumTracks?.length) {
     return err(`no tracks found for album ${slots.album}`, msg);
   } else {
-    // FIXME: handle multiple albums with the same name
+    const queue = slots.playaction === "queue";
     await playTracks(trackLocations(albumTracks), { queue });
-
     if (slots.tracknum || slots.tracknumword) {
       await doJumpToTrack({slots});
     }
@@ -221,22 +170,12 @@ export async function doPlayAlbum(msg: MessagePlayAlbum) {
 export async function doPlayGenre(msg: MessagePlayGenre, best: boolean = false) {
   const { slots } = msg;
   if(!slots?.genre) return err("no genre", msg);
-  const { decade, genre, year } = slots;
-  const queue = slots.playaction === "queue";
   const minRating = best ? MIN_RATING_BEST : MIN_RATING;
-  const genreTracks = await dbQuery(sql`
-    SELECT t.location, t.persistent_id
-    FROM vox_genres vg
-    INNER JOIN tracks t ON vg.genre = t.genre
-    WHERE vg.sentence = ${genre}
-      AND t.rating >= ${minRating}
-      ${year   ? whereYear(years[year])        : sql``}
-      ${decade ? whereYear(decades[decade], 9) : sql``}
-  `) as SqlTrack[];
+  const genreTracks = await queryTracksByGenre(msg, minRating);
   if(!genreTracks?.length) {
-    return err(`no tracks found for genre ${genre}`, msg);
+    return err(`no tracks found for genre ${slots.genre}`, msg);
   } else {
-    // FIXME: handle multiple albums with the same name
+    const queue = slots.playaction === "queue";
     await playTracks(trackLocations(genreTracks), { shuffle: true, queue });
   }
 }
@@ -245,23 +184,11 @@ export async function doStartPlaylist(msg: MessageStartPlaylist) {
   const { slots } = msg;
   const { playlistaction } = slots;
   if(!slots?.playlist) return err("no playlist", msg);
-  const shuffle = (playlistaction === "shuffle");
-  const orderBy = shuffle
-    ? dbRawValue("ORDER BY RANDOM()")
-    : sql`ORDER BY ${sql.ident("pi", "pos")}`;
-  const playlistTracks = await dbQuery(sql`
-    SELECT t.location, t.persistent_id
-    FROM vox_playlists vp
-    INNER JOIN playlist_items pi ON vp.playlist_id = pi.playlist_id
-    INNER JOIN tracks t ON pi.track_id = t.track_id
-    WHERE vp.sentence = ${slots.playlist}
-    ${orderBy}
-    LIMIT ${MAX_QUEUED_TRACKS || 99999}
-  `) as SqlTrack[];
+  const playlistTracks = await queryTracksByPlaylist(msg, MAX_QUEUED_TRACKS);
   if(!playlistTracks?.length) {
     return err(`no tracks found for playlist ${slots.playlist}`, msg);
   } else {
-    // await playTracks(trackLocations(playlistTracks), { shuffle, queue });
+    const shuffle = (playlistaction === "shuffle");
     await playTracks(trackLocations(playlistTracks), { shuffle, queue: false });
   }
 }
@@ -269,17 +196,11 @@ export async function doStartPlaylist(msg: MessageStartPlaylist) {
 export async function doPlayTrack(msg: MessagePlayTrack) {
   const { slots } = msg;
   if(!slots?.track) return err("no track", msg);
-  const queue = slots.playaction === "queue";
-  const tracks = await dbQuery(sql`
-    SELECT t.location, t.persistent_id
-    FROM vox_tracks vt
-    INNER JOIN tracks t ON vt.track_id = t.track_id
-    WHERE vt.sentence = ${slots.track}
-    LIMIT ${MAX_QUEUED_TRACKS || 99999}
-  `) as SqlTrack[];
+  const tracks = await queryTrack(msg);
   if(!tracks?.length) {
     return err(`no tracks found for ${slots.track}`, msg);
   } else {
+    const queue = slots.playaction === "queue";
     playTracks(trackLocations(tracks), { shuffle: true, queue });
   }
 }
@@ -288,18 +209,12 @@ export async function doPlayYear(msg: MessagePlayYear, best = false) {
   const { slots } = msg;
   const { decade, year } = slots;
   if(!year && !decade) return err("no year", msg);
-  const queue = slots.playaction === "queue";
   const minRating = best ? MIN_RATING_BEST : MIN_RATING;
-  const yearTracks = await dbQuery(sql`
-    SELECT t.location, t.persistent_id
-    FROM tracks t
-    WHERE t.rating >= ${minRating}
-    ${year   ? whereYear(years[year])        : sql``}
-    ${decade ? whereYear(decades[decade], 9) : sql``}
-  `) as SqlTrack[];
+  const yearTracks = await queryTracksByYear(msg, minRating);
   if(!yearTracks?.length) {
     return err("no tracks", msg);
   } else {
+    const queue = slots.playaction === "queue";
     await playTracks(trackLocations(yearTracks), { shuffle: true, queue });
   }
 }

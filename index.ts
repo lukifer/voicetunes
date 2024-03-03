@@ -77,7 +77,7 @@ player.start().then(async () => {
   SFX.init(AUDIO_DEVICE_OUT);
   LED.open();
 
-  await buttonListen();
+  if (BT_BUTTON_NAME) await buttonListen();
 
   LED.flair();
   await player.pause();
